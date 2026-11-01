@@ -8,8 +8,13 @@ final class ConfigFlowUITests: XCTestCase {
         app = XCUIApplication()
         app.launch()
         // If the app shows an Open panel instead of an untitled document, create one.
-        let newDoc = app.buttons["New Document"].firstMatch
-        if newDoc.waitForExistence(timeout: 3) { newDoc.click() }
+        // Dismiss the launch Open panel if present, then make a new untitled document.
+        if app.buttons["New Document"].firstMatch.waitForExistence(timeout: 3) {
+            app.typeKey(.escape, modifierFlags: [])
+        }
+        app.typeKey("n", modifierFlags: .command)
+        _ = app.windows.firstMatch.waitForExistence(timeout: 5)
+        print("UI TREE BEGIN\n\(app.debugDescription)\nUI TREE END")
     }
 
     private func element(_ id: String) -> XCUIElement {

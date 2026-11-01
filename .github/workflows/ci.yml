@@ -19,7 +19,7 @@ jobs:
         run: |
           set -o pipefail
           xcodebuild test -scheme DMXBridge -destination 'platform=macOS' \
-            CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO | tail -n 80
+            CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO | tail -n 400
       - name: Build universal release app
         run: |
           set -o pipefail
