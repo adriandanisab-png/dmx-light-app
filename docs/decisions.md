@@ -29,3 +29,8 @@ The owner's Mac has only Command Line Tools (no disk space for Xcode). The built
 ## 2026-11-02: Plan 2 started before Plan 1 hardware findings
 
 The owner asked to continue to Plan 2 (preview, fades) before running hardware test part 1. `plan-2-direct-dmx` branches from `plan-1-foundation` instead of a merged `main`. Plan 1 merges to `main` after the findings session; ConsoleController defaults are updated then.
+
+## 2026-11-02: Plan 2 engine details
+
+- HTP merging applies only to `.intensity` channels. Colour channels of dimmer-less types are LTP when merging playbacks (channel-wise HTP would mix colours), but grand master and blackout still scale them (`Engine.isIntensity`).
+- `FixtureType.panRangeDegrees`/`tiltRangeDegrees` decode to 540/270 when absent (Plan 1 files); `Show.snapshots`/`stage` decode to empty/10x6.
