@@ -15,8 +15,7 @@ jobs:
         run: swift test --package-path Packages/DMXCore
       - name: Generate project
         run: brew install xcodegen && xcodegen generate
-      - name: Build app and run UI tests
-        continue-on-error: true
+      - name: Build and test app
         run: |
           set -o pipefail
           xcodebuild test -scheme DMXBridge -destination 'platform=macOS' \

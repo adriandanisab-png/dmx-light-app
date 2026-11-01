@@ -16,9 +16,6 @@ final class ConsoleFlowUITests: XCTestCase {
         }
         app.typeKey("n", modifierFlags: .command)
         _ = app.windows.firstMatch.waitForExistence(timeout: 5)
-        print("UI DIAG windows=\(app.windows.count) sheets=\(app.sheets.count) dialogs=\(app.dialogs.count) buttons=\(app.buttons.count) all=\(app.descendants(matching: .any).count)")
-        for b in app.buttons.allElementsBoundByIndex.prefix(30) { print("UI DIAG button id=\(b.identifier) label=\(b.label)") }
-        for w in app.windows.allElementsBoundByIndex { print("UI DIAG window id=\(w.identifier) title=\(w.title)") }
     }
 
     private func element(_ id: String) -> XCUIElement {
