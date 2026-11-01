@@ -10,3 +10,18 @@ Part 1: first session with the real console (plan 1). Tick each step and record 
 - [ ] 6. Confirm the console label says **DMX Master II** and that it has **12 scanners**.
 
 Safety: nothing is sent until ARM is pressed. Blackout is key **B**. If the app and console disagree, use **Reset console**.
+
+## Part 2: direct DMX through the SH-RS09B (plan 2)
+
+Record results (including the best refresh rate) in `docs/console-midi-findings.md` or below.
+
+- [ ] 1. Plug in the SH-RS09B and connect DMX to the first fixture.
+- [ ] 2. Devices → Direct → pick the port → **ARM**.
+- [ ] 3. Configure the real fixtures in Config.
+- [ ] 4. Touch each channel and confirm the light responds.
+- [ ] 5. **Flicker check:** hold one static look for 5 minutes while dragging windows and saving. Note any flicker. If there is any, try refresh 25 Hz and 40 Hz, and record the best value.
+- [ ] 6. Unplug the adapter while armed and check the alert ("DMX adapter lost: switch the DMX cable to the console"). Replug and check output resumes.
+- [ ] 7. **Backup drill:** move the DMX cable to the console and fire a console scene from the Mac.
+
+Safety: the adapter port is only opened while ARMED. Blackout is key **B**.
+
