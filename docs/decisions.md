@@ -25,3 +25,7 @@ The owner's Mac has only Command Line Tools (no disk space for Xcode). The built
 - "Output not armed" toast text is exact; a separate orange hint under the Console toolbar explains arming while disarmed.
 - Added `App/ShowRootView.swift` (tabs, toolbar, toast) and a Play/Edit/Select mode picker on the Console page (Select builds looks).
 - Without a chosen MIDI interface the console uses a disconnected `RecordingMIDISender`, so firing shows "MIDI interface not connected: nothing sent".
+
+## 2026-11-02: Plan 2 started before Plan 1 hardware findings
+
+The owner asked to continue to Plan 2 (preview, fades) before running hardware test part 1. `plan-2-direct-dmx` branches from `plan-1-foundation` instead of a merged `main`. Plan 1 merges to `main` after the findings session; ConsoleController defaults are updated then.
