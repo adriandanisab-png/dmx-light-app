@@ -75,6 +75,7 @@ public final class OpenDMXOutput: DMXOutputDevice, @unchecked Sendable {
         defer { finished.signal() }
         let period = 1.0 / refreshHz
         var connected = true
+        var deadline = Date()
         while isRunning {
             if !connected {
                 // Adapter lost: poll for it at 1 Hz (sleep in slices so stop() stays responsive).
@@ -84,13 +85,13 @@ public final class OpenDMXOutput: DMXOutputDevice, @unchecked Sendable {
                 do {
                     try link.open(path: path, baud: 250_000, stopBits: 2)
                     connected = true
+                    deadline = Date()
                     setConnected(true)
                 } catch {
                     link.close()
                 }
                 continue
             }
-            let started = Date()
             do {
                 try link.sendBreak(microseconds: Self.breakMicroseconds)
                 link.sleep(microseconds: Self.mabMicroseconds)
@@ -103,8 +104,10 @@ public final class OpenDMXOutput: DMXOutputDevice, @unchecked Sendable {
                 onDisconnect?()
                 continue
             }
-            let remaining = period - Date().timeIntervalSince(started)
-            if remaining > 0 { Thread.sleep(forTimeInterval: remaining) }
+            // Absolute deadlines: sleep overshoot doesn't accumulate into a lower refresh rate.
+            deadline = deadline.addingTimeInterval(period)
+            let remaining = deadline.timeIntervalSinceNow
+            if remaining > 0 { Thread.sleep(forTimeInterval: remaining) } else { deadline = Date() }
         }
     }
 }

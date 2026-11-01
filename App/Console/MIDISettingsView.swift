@@ -3,7 +3,7 @@ import ShowModel
 
 struct MIDISettingsView: View {
     @Binding var map: ConsoleMap
-    @EnvironmentObject var model: AppModel
+    @ObservedObject var model: AppModel
 
     private var noteOffEnabled: Binding<Bool> {
         Binding(get: { map.noteOffDelayMs != nil },

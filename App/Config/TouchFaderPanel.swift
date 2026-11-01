@@ -5,7 +5,7 @@ import ShowModel
 struct TouchFaderPanel: View {
     let patch: Patch
     let fixtureID: UUID?
-    @EnvironmentObject var model: AppModel
+    @ObservedObject var model: AppModel
 
     var body: some View {
         if let fixture = patch.fixtures.first(where: { $0.id == fixtureID }), let type = patch.type(of: fixture) {
@@ -13,10 +13,10 @@ struct TouchFaderPanel: View {
                 HStack(alignment: .bottom, spacing: 12) {
                     ForEach(Array(type.channels.enumerated()), id: \.element.id) { index, channel in
                         VStack {
-                            Text("\(model.frame[fixture.address + index])").font(.caption.monospacedDigit())
+                            Text("\(model.shownValue(fixture: fixture, channel: index))").font(.caption.monospacedDigit())
                             VerticalFader(value: Binding(
-                                get: { Double(model.frame[fixture.address + index]) },
-                                set: { model.setChannel(UInt8(min(max($0.rounded(), 0), 255)), index: index, of: fixture, patch: patch) }))
+                                get: { Double(model.shownValue(fixture: fixture, channel: index)) },
+                                set: { model.programmerSet(channel: index, to: UInt8(min(max($0.rounded(), 0), 255)), fixtures: [fixture.id]) }))
                             .frame(width: 36, height: 140)
                             .accessibilityLabel(channel.name)
                             Text(channel.name).font(.caption).lineLimit(1)

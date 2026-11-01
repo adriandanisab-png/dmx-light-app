@@ -3,7 +3,7 @@ import SwiftUI
 /// Sends any note/velocity/channel. Needs the window to be armed, like everything else.
 struct MIDITestPanel: View {
     let defaultChannel: Int
-    @EnvironmentObject var model: AppModel
+    @ObservedObject var model: AppModel
     @State private var note = 0
     @State private var velocity = 127
     @State private var channel: Int?

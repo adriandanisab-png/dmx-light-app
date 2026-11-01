@@ -10,7 +10,7 @@ enum ConsoleMode: String, CaseIterable, Identifiable {
 /// The "Console" tab: grid, looks, MIDI settings and test panel.
 struct ConsoleView: View {
     @Binding var document: ShowDocument
-    @EnvironmentObject var model: AppModel
+    @ObservedObject var model: AppModel
     @State private var mode: ConsoleMode = .play
     @State private var selection: Set<ConsoleTarget> = []
     @State private var editingTarget: ConsoleTarget?
@@ -21,14 +21,14 @@ struct ConsoleView: View {
     var body: some View {
         HSplitView {
             VStack(spacing: 8) {
-                ConsolePlaybackView(mode: $mode, showReset: $showReset)
+                ConsolePlaybackView(mode: $mode, showReset: $showReset, model: model)
                 if !model.isArmed {
                     Text("Output is not armed: nothing is sent to the console. Press ARM in the toolbar.")
                         .font(.callout).foregroundStyle(.orange)
                         .accessibilityIdentifier("armHint")
                 }
                 ScrollView {
-                    ConsoleGrid(map: map.wrappedValue, mode: mode, selection: $selection, editingTarget: $editingTarget)
+                    ConsoleGrid(map: map.wrappedValue, mode: mode, selection: $selection, editingTarget: $editingTarget, model: model)
                         .padding(8)
                 }
                 Text("Banks 16\u{2013}30 can't be reached over MIDI")
@@ -37,11 +37,11 @@ struct ConsoleView: View {
             .frame(minWidth: 620)
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    ConsoleLooksView(map: map, selection: $selection, mode: mode)
+                    ConsoleLooksView(map: map, selection: $selection, mode: mode, model: model)
                     Divider()
-                    MIDISettingsView(map: map)
+                    MIDISettingsView(map: map, model: model)
                     Divider()
-                    MIDITestPanel(defaultChannel: map.wrappedValue.midiChannel)
+                    MIDITestPanel(defaultChannel: map.wrappedValue.midiChannel, model: model)
                 }
                 .padding(12)
             }
@@ -50,7 +50,7 @@ struct ConsoleView: View {
         .sheet(item: $editingTarget) { target in
             ConsoleCellEditor(target: target, map: map)
         }
-        .sheet(isPresented: $showReset) { ResetConsoleSheet() }
+        .sheet(isPresented: $showReset) { ResetConsoleSheet(model: model) }
         .onAppear { model.loadConsoleMap(document.show.console) }
         .onChange(of: document.show.console) { _, new in model.loadConsoleMap(new) }
     }
@@ -79,7 +79,7 @@ extension ConsoleTarget: @retroactive Identifiable {
 }
 
 struct ResetConsoleSheet: View {
-    @EnvironmentObject var model: AppModel
+    @ObservedObject var model: AppModel
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {

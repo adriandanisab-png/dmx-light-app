@@ -7,7 +7,7 @@ struct ConsoleGrid: View {
     let mode: ConsoleMode
     @Binding var selection: Set<ConsoleTarget>
     @Binding var editingTarget: ConsoleTarget?
-    @EnvironmentObject var model: AppModel
+    @ObservedObject var model: AppModel
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {

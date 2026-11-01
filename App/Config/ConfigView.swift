@@ -4,7 +4,7 @@ import ShowModel
 /// The "Config" tab: fixture types, patch, touch test and channel monitor.
 struct ConfigView: View {
     @Binding var document: ShowDocument
-    @EnvironmentObject var model: AppModel
+    @ObservedObject var model: AppModel
     @State private var selectedTypeID: UUID?
     @State private var selectedFixtureID: UUID?
     @State private var showAddSheet = false
@@ -40,9 +40,9 @@ struct ConfigView: View {
                     Group {
                         switch lowerTab {
                         case .touch:
-                            TouchFaderPanel(patch: patch.wrappedValue, fixtureID: selectedFixtureID)
+                            TouchFaderPanel(patch: patch.wrappedValue, fixtureID: selectedFixtureID, model: model)
                         case .monitor:
-                            ChannelMonitorView()
+                            ChannelMonitorView(model: model)
                         }
                     }
                     .frame(minHeight: 200, idealHeight: 240)
@@ -52,9 +52,6 @@ struct ConfigView: View {
         }
         .sheet(isPresented: $showAddSheet) {
             AddFixturesSheet(patch: patch, preferredTypeID: selectedTypeID)
-        }
-        .onChange(of: document.show.patch) { old, new in
-            model.patchDidChange(from: old, to: new)
         }
     }
 

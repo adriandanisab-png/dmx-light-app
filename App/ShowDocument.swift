@@ -13,6 +13,8 @@ struct ShowDocument: FileDocument {
     static let fileName = "show.json"
 
     var show: Show
+    /// Contents of `show.stage.backgroundFileName`, stored as a second file in the package.
+    var backgroundImageData: Data?
 
     init(show: Show = Show()) { self.show = show }
 
@@ -21,11 +23,20 @@ struct ShowDocument: FileDocument {
             throw ShowFileError.corrupt
         }
         show = try Show.decode(data)
+        if let name = show.stage.backgroundFileName {
+            backgroundImageData = configuration.file.fileWrappers?[name]?.regularFileContents
+        }
     }
 
     func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
         let json = FileWrapper(regularFileWithContents: try show.encode())
         json.preferredFilename = Self.fileName
-        return FileWrapper(directoryWithFileWrappers: [Self.fileName: json])
+        var files = [Self.fileName: json]
+        if let name = show.stage.backgroundFileName, let data = backgroundImageData {
+            let image = FileWrapper(regularFileWithContents: data)
+            image.preferredFilename = name
+            files[name] = image
+        }
+        return FileWrapper(directoryWithFileWrappers: files)
     }
 }

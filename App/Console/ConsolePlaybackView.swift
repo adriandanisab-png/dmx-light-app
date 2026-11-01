@@ -5,7 +5,7 @@ import ShowModel
 struct ConsolePlaybackView: View {
     @Binding var mode: ConsoleMode
     @Binding var showReset: Bool
-    @EnvironmentObject var model: AppModel
+    @ObservedObject var model: AppModel
 
     var body: some View {
         HStack(spacing: 12) {

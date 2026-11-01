@@ -6,7 +6,7 @@ struct ConsoleLooksView: View {
     @Binding var map: ConsoleMap
     @Binding var selection: Set<ConsoleTarget>
     let mode: ConsoleMode
-    @EnvironmentObject var model: AppModel
+    @ObservedObject var model: AppModel
     @State private var newName = ""
 
     var body: some View {
