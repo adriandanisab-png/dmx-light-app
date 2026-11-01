@@ -205,7 +205,7 @@ final class AppModel: ObservableObject {
                 guard let path = portPath else { showToast("Pick a DMX adapter in Devices first"); return }
                 let device = OpenDMXOutput(path: path, refreshHz: refreshHz)
                 device.onDisconnect = { [weak self] in
-                    Task { @MainActor in self?.showAdapterLost = true }
+                    Task { @MainActor in if self?.isArmed == true { self?.showAdapterLost = true } }
                 }
                 do { try device.start() } catch {
                     showToast("Can't open \(path): \(error)")
