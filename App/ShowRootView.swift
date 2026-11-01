@@ -10,7 +10,7 @@ struct ShowRootView: View {
         TabView {
             ConfigView(document: $document)
                 .tabItem { Text("Config") }
-            Text("Console page arrives in the next commit").frame(maxWidth: .infinity, maxHeight: .infinity)
+            ConsoleView(document: $document)
                 .tabItem { Text("Console") }
         }
         .environmentObject(model)
@@ -38,6 +38,7 @@ struct ShowRootView: View {
         .animation(.default, value: model.toast)
         .onAppear {
             model.loadPatch(document.show.patch)
+            model.loadConsoleMap(document.show.console)
         }
     }
 }
