@@ -327,9 +327,10 @@ and beam cones can move to the end.
 
 - Single DMX universe (512 channels).
 - Console: 12 scanners × 16 channels. By convention scanner *n* uses DMX
-  addresses 16(n−1)+1 … 16n (1–192). The owner described the console as
-  "banks A and B, 16 fixtures each", which doesn't match the manual. See
-  open questions.
+  addresses 16(n−1)+1 … 16n (1–192). The owner's "A and B, 16" most likely
+  refers to the console's fader pages: 8 faders show channels 1–8 (page A)
+  or 9–16 (page B) of the selected scanner. The cheat sheet uses this
+  layout.
 - Console MIDI can reach banks 1–15 only.
 - No Apple developer account is assumed. Distribute a locally signed build
   first; notarisation is optional later.

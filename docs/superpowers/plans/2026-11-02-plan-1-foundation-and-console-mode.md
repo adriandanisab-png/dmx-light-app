@@ -10,7 +10,7 @@
 
 **Spec:** `docs/superpowers/specs/2026-11-02-dmx-light-app-design.md`. Read sections 1, 2 (goals 1, 2, 9, 12, 13), 4, 5, 8, 9 and 10 before starting.
 
-**Later plans** (written after this one ships, same format):
+**Later plans** (in `docs/superpowers/plans/`, run in order):
 - Plan 2: Engine + programmer + 2D stage preview + snapshots/fades + playback page + **Open DMX (SH-RS09B) driver** (spec milestones 3–5).
 - Plan 3: Effects, tap tempo, cue lists with two-part cues (milestones 6–7).
 - Plan 4: Capture wizard, cheat sheet, QLC+ import, Enttec Pro, hardening (milestones 8–9).
