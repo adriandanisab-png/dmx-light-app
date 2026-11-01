@@ -14,6 +14,7 @@ let package = Package(
                 .product(name: "ShowModel", package: "DMXCore"),
                 .product(name: "DMXOutput", package: "DMXCore"),
                 .product(name: "ConsoleMIDI", package: "DMXCore"),
+                .product(name: "Engine", package: "DMXCore"),
             ],
             exclude: ["Info.plist"]
         ),

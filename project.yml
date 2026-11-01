@@ -31,6 +31,8 @@ targets:
         product: DMXOutput
       - package: DMXCore
         product: ConsoleMIDI
+      - package: DMXCore
+        product: Engine
   DMXBridgeUITests:
     type: bundle.ui-testing
     platform: macOS

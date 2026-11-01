@@ -7,11 +7,25 @@ public struct Show: Codable, Equatable, Sendable {
     public var formatVersion: Int
     public var patch: Patch
     public var console: ConsoleMap
+    public var snapshots: [Snapshot]
+    public var stage: StagePlot
 
     public init() {
         formatVersion = Self.currentFormatVersion
         patch = Patch()
         console = ConsoleMap()
+        snapshots = []
+        stage = StagePlot()
+    }
+
+    // Additions since Plan 1 decode with defaults so older files still open.
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        formatVersion = try c.decode(Int.self, forKey: .formatVersion)
+        patch = try c.decode(Patch.self, forKey: .patch)
+        console = try c.decode(ConsoleMap.self, forKey: .console)
+        snapshots = try c.decodeIfPresent([Snapshot].self, forKey: .snapshots) ?? []
+        stage = try c.decodeIfPresent(StagePlot.self, forKey: .stage) ?? StagePlot()
     }
 
     private struct VersionProbe: Decodable { var formatVersion: Int }
