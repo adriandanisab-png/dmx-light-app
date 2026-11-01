@@ -9,6 +9,9 @@ final class ConsoleFlowUITests: XCTestCase {
         // Replace CoreMIDI with a connected RecordingMIDISender.
         app.launchArguments += ["-useRecordingMIDI"]
         app.launch()
+        // If the app shows an Open panel instead of an untitled document, create one.
+        let newDoc = app.buttons["New Document"]
+        if newDoc.waitForExistence(timeout: 3) { newDoc.click() }
     }
 
     private func element(_ id: String) -> XCUIElement {

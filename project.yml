@@ -41,6 +41,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: app.dmxbridge.DMXBridgeUITests
         GENERATE_INFOPLIST_FILE: YES
         TEST_TARGET_NAME: DMXBridge
+        SWIFT_VERSION: "5.0"
     dependencies:
       - target: DMXBridge
 schemes:
