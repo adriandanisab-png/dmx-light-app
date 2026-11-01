@@ -17,3 +17,11 @@ The owner's Mac has only Command Line Tools (no disk space for Xcode). The built
 - `ConsoleMap` encodes `cells` as a sorted array of `{target, cell}` pairs (custom Codable) for stable JSON.
 - Velocity 0 and out-of-range note/velocity throw `MIDIMessageError`; bad channel throws `ConsoleError.midiChannelOutOfRange`.
 - A failed Note Off (after a successful Note On) is ignored, since the console has already toggled.
+
+## 2026-11-02: plan 1 tasks 8-10 (UI)
+
+- UI tests (`UITests/ConfigFlowUITests.swift`, `UITests/ConsoleFlowUITests.swift`) were written but **not run locally** (no Xcode, no XCUITest). They compile and run only in Xcode; CI on GitHub runs them. Expect to adjust element queries (tab lookup, menu items) after the first CI run.
+- The shared ARM control is a `Button` (identifier `armButton`, accessibility value `on`/`off`) rather than a `Toggle`, so XCUITest sees one predictable element type. It sets both `OutputGate` and `ConsoleController.isArmed`.
+- "Output not armed" toast text is exact; a separate orange hint under the Console toolbar explains arming while disarmed.
+- Added `App/ShowRootView.swift` (tabs, toolbar, toast) and a Play/Edit/Select mode picker on the Console page (Select builds looks).
+- Without a chosen MIDI interface the console uses a disconnected `RecordingMIDISender`, so firing shows "MIDI interface not connected: nothing sent".

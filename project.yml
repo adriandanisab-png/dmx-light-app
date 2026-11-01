@@ -32,10 +32,22 @@ targets:
         product: DMXOutput
       - package: DMXCore
         product: ConsoleMIDI
+  DMXBridgeUITests:
+    type: bundle.ui-testing
+    platform: macOS
+    sources: [UITests]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.dmxbridge.DMXBridgeUITests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: DMXBridge
+    dependencies:
+      - target: DMXBridge
 schemes:
   DMXBridge:
     build:
       targets:
         DMXBridge: all
     test:
-      targets: []
+      targets:
+        - DMXBridgeUITests
