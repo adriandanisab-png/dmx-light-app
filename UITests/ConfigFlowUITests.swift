@@ -8,7 +8,7 @@ final class ConfigFlowUITests: XCTestCase {
         app = XCUIApplication()
         app.launch()
         // If the app shows an Open panel instead of an untitled document, create one.
-        let newDoc = app.buttons["New Document"]
+        let newDoc = app.buttons["New Document"].firstMatch
         if newDoc.waitForExistence(timeout: 3) { newDoc.click() }
     }
 
