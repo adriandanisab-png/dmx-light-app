@@ -34,3 +34,4 @@ The owner asked to continue to Plan 2 (preview, fades) before running hardware t
 
 - HTP merging applies only to `.intensity` channels. Colour channels of dimmer-less types are LTP when merging playbacks (channel-wise HTP would mix colours), but grand master and blackout still scale them (`Engine.isIntensity`).
 - `FixtureType.panRangeDegrees`/`tiltRangeDegrees` decode to 540/270 when absent (Plan 1 files); `Show.snapshots`/`stage` decode to empty/10x6.
+- Plan 2 task 5: `OpenDMXOutput.start()` throws `openFailed` if the first open fails; reconnect retries (1 s) only apply after a successful start. `opendmx-probe` is an executable target in DMXCore (debug-only body via `#if DEBUG`).
