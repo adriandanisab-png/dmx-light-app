@@ -78,10 +78,11 @@ private func wait(until timeout: TimeInterval, _ cond: () -> Bool) {
     frame[1] = 255
     try out.send(frame)
     try out.start()
-    Thread.sleep(forTimeInterval: 0.1)
+    // Wait for two full frames rather than a fixed time: CI runners can be slow.
+    wait(until: 2.0) { link.writeCount >= 2 }
     out.stop()
     let calls = link.calls.filter { if case .open = $0 { return false }; if case .close = $0 { return false }; return true }
-    #expect(calls.count >= 8)
+    try #require(calls.count >= 8)
     let expected: [LinkCall] = [.sendBreak(110), .sleep(12), .write(count: 513, first: [0x00, 0xFF]), .drain]
     #expect(Array(calls.prefix(4)) == expected)
     #expect(Array(calls[4..<8]) == expected)
