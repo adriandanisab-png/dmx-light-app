@@ -17,7 +17,7 @@ struct ShowRootView: View {
         .frame(minWidth: 1000, minHeight: 640)
         .preferredColorScheme(.dark)
         .toolbar {
-            ToolbarItem(placement: .primaryAction) { ArmButton() }
+            ToolbarItem(placement: .primaryAction) { ArmButton(model: model) }
             ToolbarItem(placement: .status) {
                 Text(model.outputStatus).font(.caption).foregroundStyle(.secondary)
                     .accessibilityIdentifier("outputStatus")
@@ -44,8 +44,10 @@ struct ShowRootView: View {
 }
 
 /// The window's single ARM control: red when armed. Nothing is sent while disarmed.
+/// Takes the model explicitly: macOS toolbar items are hosted outside the window's
+/// view tree and don't inherit `environmentObject`, so `@EnvironmentObject` crashes here.
 struct ArmButton: View {
-    @EnvironmentObject var model: AppModel
+    @ObservedObject var model: AppModel
 
     var body: some View {
         Button {
