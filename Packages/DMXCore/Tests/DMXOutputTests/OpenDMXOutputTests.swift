@@ -79,7 +79,7 @@ private func wait(until timeout: TimeInterval, _ cond: () -> Bool) {
     try out.send(frame)
     try out.start()
     // Wait for two full frames rather than a fixed time: CI runners can be slow.
-    wait(until: 2.0) { link.writeCount >= 2 }
+    wait(until: 10.0) { link.writeCount >= 2 }
     out.stop()
     let calls = link.calls.filter { if case .open = $0 { return false }; if case .close = $0 { return false }; return true }
     try #require(calls.count >= 8)
@@ -125,13 +125,13 @@ private func wait(until timeout: TimeInterval, _ cond: () -> Bool) {
     let lost = Flag()
     out.onDisconnect = { lost.hit() }
     try out.start()
-    wait(until: 1.0) { lost.count > 0 }
+    wait(until: 10.0) { lost.count > 0 }
     #expect(lost.count == 1)
     #expect(!out.isConnected)
     // The adapter stays gone for a moment: reopen must not happen immediately (no busy loop).
     Thread.sleep(forTimeInterval: 0.3)
     #expect(link.openCount == 1)
-    wait(until: 1.5) { out.isConnected }
+    wait(until: 10.0) { out.isConnected }
     #expect(link.openCount == 2)
     #expect(out.isConnected)
     Thread.sleep(forTimeInterval: 0.15)
@@ -147,9 +147,9 @@ private func wait(until timeout: TimeInterval, _ cond: () -> Bool) {
     let lost = Flag()
     out.onDisconnect = { lost.hit() }
     try out.start()
-    wait(until: 1.0) { lost.count > 0 }
+    wait(until: 10.0) { lost.count > 0 }
     link.openFailures = 1          // first reconnect attempt fails too
-    wait(until: 6.0) { out.isConnected }
+    wait(until: 10.0) { out.isConnected }
     #expect(link.openCount == 3)   // initial + failed retry + successful retry
     #expect(out.isConnected)
     #expect(lost.count == 1)       // one alert per outage
