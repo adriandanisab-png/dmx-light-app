@@ -17,9 +17,29 @@ public enum Engine {
             return (1...DMXFrame.size).contains(a) ? (a, t) : nil
         }
 
+        func progress(_ pb: PlaybackState) -> Double {
+            pb.fade <= 0 ? 1 : min(max((time - pb.startedAt) / pb.fade, 0), 1)
+        }
+
+        // Channels no active snapshot records fade from the oldest playback's start frame back to
+        // their defaults, so replacing look A with look B fades A's lights out instead of cutting them.
+        if let first = input.playbacks.first {
+            var recorded = Set<Int>()
+            for pb in input.playbacks {
+                for (fixtureID, values) in input.snapshots[pb.snapshotID]?.values ?? [:] {
+                    for ch in values.keys { if let (addr, _) = address(fixtureID, ch) { recorded.insert(addr) } }
+                }
+            }
+            let p = progress(first)
+            for addr in 1...DMXFrame.size where !recorded.contains(addr) {
+                let from = Double(first.fadeFrom[addr]), to = Double(frame[addr])
+                if from != to { frame[addr] = UInt8(max(0, min(255, (from + (to - from) * p).rounded()))) }
+            }
+        }
+
         for pb in input.playbacks {
             guard let snap = input.snapshots[pb.snapshotID] else { continue }
-            let p: Double = pb.fade <= 0 ? 1 : min(max((time - pb.startedAt) / pb.fade, 0), 1)
+            let p = progress(pb)
             for (fixtureID, values) in snap.values {
                 for (ch, target) in values {
                     guard let (addr, type) = address(fixtureID, ch) else { continue }

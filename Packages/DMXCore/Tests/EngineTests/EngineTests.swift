@@ -130,3 +130,17 @@ private func snap(_ values: [UUID: FixtureValues]) -> Snapshot { Snapshot(name: 
     #expect(Engine.isIntensity(.uv, typeHasIntensity: false))
     #expect(!Engine.isIntensity(.strobe, typeHasIntensity: false))
 }
+
+/// Recalling look B over look A: channels only A used fade back to their defaults over B's fade, no jump.
+@Test func releasedChannelsFadeOut() {
+    let r = Rig()
+    let a = snap([r.par1.id: [0: 255]])
+    let b = snap([r.par2.id: [0: 255]])
+    var from = DMXFrame(); from[1] = 255          // A fully on when B is recalled
+    let pb = r.playback(b, start: 10, fade: 2, from: from)
+    let input = r.input([a, b], playbacks: [pb])
+    #expect(Engine.render(input, at: 10)[1] == 255)
+    #expect(Engine.render(input, at: 11)[1] == 128)
+    #expect(Engine.render(input, at: 12)[1] == 0)
+    #expect(Engine.render(input, at: 11)[4] == 128)
+}
