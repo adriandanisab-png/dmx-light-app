@@ -1,27 +1,32 @@
 import SwiftUI
 import ShowModel
 
-/// Root of one document window: Config and Console tabs, shared ARM toggle and error toast.
+/// Root of one document window: tabs, shared ARM control, status line and error toast.
 struct ShowRootView: View {
     @Binding var document: ShowDocument
     @StateObject private var model = AppModel()
 
+    /// The tab-embedded views get the model explicitly; nothing uses `@EnvironmentObject`.
     var body: some View {
         TabView {
-            ConfigView(document: $document)
+            ConfigView(document: $document, model: model)
                 .tabItem { Text("Config") }
-            ConsoleView(document: $document)
+            StageTabView(document: $document, selection: selectionBinding, model: model)
+                .tabItem { Text("Stage") }
+            ProgrammerView(document: $document, selection: selectionBinding, model: model)
+                .tabItem { Text("Programmer") }
+            PlaybackView(document: $document, model: model)
+                .tabItem { Text("Playback") }
+            DevicesView(document: $document, model: model)
+                .tabItem { Text("Devices") }
+            ConsoleView(document: $document, model: model)
                 .tabItem { Text("Console") }
         }
-        .environmentObject(model)
         .frame(minWidth: 1000, minHeight: 640)
         .preferredColorScheme(.dark)
         .toolbar {
             ToolbarItem(placement: .primaryAction) { ArmButton(model: model) }
-            ToolbarItem(placement: .status) {
-                Text(model.outputStatus).font(.caption).foregroundStyle(.secondary)
-                    .accessibilityIdentifier("outputStatus")
-            }
+            ToolbarItem(placement: .status) { StatusLine(model: model) }
         }
         .overlay(alignment: .bottom) {
             if let toast = model.toast {
@@ -36,9 +41,37 @@ struct ShowRootView: View {
             }
         }
         .animation(.default, value: model.toast)
+        .alert("DMX adapter lost: switch the DMX cable to the console", isPresented: $model.showAdapterLost) {
+            Button("OK") { model.showAdapterLost = false }
+        } message: {
+            Text("Output reconnects by itself when the adapter is plugged back in.")
+        }
         .onAppear {
-            model.loadPatch(document.show.patch)
+            model.start()
+            model.loadShow(document.show)
             model.loadConsoleMap(document.show.console)
+        }
+        .onChange(of: document.show.patch) { _, _ in model.loadShow(document.show) }
+        .onChange(of: document.show.snapshots) { _, _ in model.loadShow(document.show) }
+    }
+
+    private var selectionBinding: Binding<[UUID]> {
+        Binding(get: { model.programmer.selection }, set: { model.setSelection($0) })
+    }
+}
+
+/// Output status line: "Direct \u{00B7} /dev/cu.usbserial-A10K \u{00B7} 30 Hz" / "Adapter lost".
+/// Takes the model explicitly (toolbar items don't inherit the environment).
+struct StatusLine: View {
+    @ObservedObject var model: AppModel
+
+    var body: some View {
+        // Polls once a second so "Adapter lost" appears and clears without other UI changes.
+        TimelineView(.periodic(from: .now, by: 1)) { _ in
+            Text(model.outputStatus).font(.caption)
+                .foregroundStyle(model.outputStatus == "Adapter lost" ? Color.red : Color.secondary)
+                .accessibilityIdentifier("outputStatus")
+                .accessibilityValue("frameSum=\(model.frameSum)")
         }
     }
 }
