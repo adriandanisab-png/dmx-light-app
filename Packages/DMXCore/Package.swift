@@ -16,6 +16,7 @@ let package = Package(
         .library(name: "DMXOutput", targets: ["DMXOutput"]),
         .library(name: "ConsoleMIDI", targets: ["ConsoleMIDI"]),
         .library(name: "Engine", targets: ["Engine"]),
+        .executable(name: "opendmx-probe", targets: ["OpenDMXProbe"]),
     ],
     dependencies: localTesting ? [.package(url: "https://github.com/swiftlang/swift-testing.git", branch: "release/6.2")] : [],
     targets: [
@@ -23,6 +24,7 @@ let package = Package(
         .target(name: "DMXOutput", dependencies: ["ShowModel"]),
         .target(name: "ConsoleMIDI", dependencies: ["ShowModel"]),
         .target(name: "Engine", dependencies: ["ShowModel", "DMXOutput"]),
+        .executableTarget(name: "OpenDMXProbe", dependencies: ["DMXOutput"]),
         .testTarget(name: "EngineTests", dependencies: ["Engine", "DMXOutput", "ShowModel"] + testingDeps),
         .testTarget(name: "ShowModelTests", dependencies: ["ShowModel"] + testingDeps),
         .testTarget(name: "DMXOutputTests", dependencies: ["DMXOutput", "ShowModel"] + testingDeps),
