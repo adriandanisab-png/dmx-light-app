@@ -40,6 +40,6 @@ struct ColorControl: View {
         color = c
         let ns = NSColor(c).usingColorSpace(.sRGB) ?? .white
         let rgb = RGB(r: Double(ns.redComponent), g: Double(ns.greenComponent), b: Double(ns.blueComponent))
-        model.programmerApply { type, values in Attributes.setColor(rgb, type: type, into: &values) }
+        model.programmerColor(rgb)
     }
 }

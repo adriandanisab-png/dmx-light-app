@@ -133,6 +133,23 @@ final class AppModel: ObservableObject {
         pushProgrammer()
     }
 
+    func programmerIntensity(_ level: Double) {
+        let frame = runner.latestFrame()
+        programmer.applyIntensity(level, patch: patch) { f, ch in frame[f.address + ch] }
+        pushProgrammer()
+    }
+
+    func programmerColor(_ c: RGB) {
+        programmer.applyColor(c, patch: patch)
+        pushProgrammer()
+    }
+
+    /// Moves the matching channel on every selected fixture, whatever its type.
+    func programmerSetMatching(_ channel: ChannelDef, to value: UInt8) {
+        programmer.setMatching(channel, to: value, patch: patch)
+        pushProgrammer()
+    }
+
     func programmerSet(channel: Int, to value: UInt8, fixtures ids: [UUID]) {
         programmer.set(channel: channel, to: value, for: ids)
         pushProgrammer()
