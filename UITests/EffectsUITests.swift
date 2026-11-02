@@ -73,4 +73,32 @@ final class EffectsUITests: DMXUITestCase {
         editor.typeText("90\r")
         XCTAssertTrue(waitForValue("90", of: element("bpmField")))
     }
+
+    func testPickFixturesForPreset() throws {
+        addRGBFixtures(count: 4)
+        openTab("Playback")
+        let chips = app.descendants(matching: .any)
+            .matching(NSPredicate(format: "identifier BEGINSWITH %@", "effectPick."))
+        XCTAssertTrue(chips.firstMatch.waitForExistence(timeout: 5))
+        XCTAssertEqual(chips.count, 4)
+        chips.element(boundBy: 2).click()
+        chips.element(boundBy: 0).click()
+        XCTAssertTrue(waitForValue("picked", of: chips.element(boundBy: 2)))
+        let target = element("effectsTarget")
+        XCTAssertTrue(waitForValue("on 2 picked", of: target))
+
+        let chase = element("effectPreset.Chase")
+        chase.click()
+        XCTAssertTrue(waitForValue("on", of: chase))
+        let row = element("runningEffect.Chase")
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+        let count = element("effectFixtureCount.Chase")
+        XCTAssertTrue(count.waitForExistence(timeout: 5))
+        XCTAssertTrue(waitForValue("2 fx", of: count))
+
+        // Pick all again and move the running chase onto every fixture.
+        element("effectPickAll").click()
+        element("effectRetarget.Chase").click()
+        XCTAssertTrue(waitForValue("4 fx", of: count))
+    }
 }

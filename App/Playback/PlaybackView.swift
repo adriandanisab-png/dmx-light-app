@@ -21,7 +21,8 @@ struct PlaybackView: View {
         HSplitView {
             controls.frame(minWidth: 420)
             // Live preview of the whole show while playing it back.
-            StageView(document: $document, selection: .constant([]), model: model, editable: false)
+            // Clicking fixtures here picks them for the preset effects.
+            StageView(document: $document, selection: $model.effectTargets, model: model, editable: false, selectOnly: true)
                 .frame(minWidth: 280)
                 .accessibilityIdentifier("playbackStagePreview")
         }

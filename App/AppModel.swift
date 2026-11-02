@@ -49,6 +49,8 @@ final class AppModel: ObservableObject {
     }
 
     @Published private(set) var runningEffects: [RunningEffect] = []
+    /// Fixtures picked on the Playback page for preset effects, in pick order (= chase order). Empty = all.
+    @Published var effectTargets: [UUID] = []
     @Published private(set) var bpm: Double = 120
     @Published private(set) var activeCueListID: UUID?
     @Published private(set) var cueCurrent: Cue?
@@ -256,6 +258,14 @@ final class AppModel: ObservableObject {
 
     func toggleEffect(_ effect: Effect) {
         if isRunning(effect.id) { stopEffect(effect.id) } else { startEffect(effect) }
+    }
+
+    /// Re-targets a running or saved effect to new fixtures without restarting it.
+    func retarget(_ effect: Effect, to ids: [UUID]) -> Effect {
+        var e = effect
+        e.fixtureIDs = ids
+        if isRunning(e.id) { startEffect(e, level: effectLevel(e.id)) }
+        return e
     }
 
     func setEffectLevel(_ id: UUID, _ level: Double) {

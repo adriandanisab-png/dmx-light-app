@@ -7,13 +7,14 @@ struct EffectsSection: View {
     @ObservedObject var model: AppModel
 
     private var patch: Patch { document.show.patch }
-    /// Programmer selection (in selection order); every patched fixture when nothing is selected.
+    /// Fixtures picked here (in pick order); every patched fixture when none are picked.
     private var targetIDs: [UUID] {
-        model.programmer.selection.isEmpty ? patch.fixtures.map(\.id) : model.programmer.selection
+        let known = Set(patch.fixtures.map(\.id))
+        let picked = model.effectTargets.filter { known.contains($0) }
+        return picked.isEmpty ? patch.fixtures.map(\.id) : picked
     }
     private var targetText: String {
-        model.programmer.selection.isEmpty ? "all \(patch.fixtures.count) fixtures"
-                                           : "\(model.programmer.selection.count) selected"
+        model.effectTargets.isEmpty ? "all \(patch.fixtures.count) fixtures" : "\(targetIDs.count) picked"
     }
 
     var body: some View {
@@ -23,6 +24,7 @@ struct EffectsSection: View {
                 Text("on \(targetText)").font(.caption).foregroundStyle(.secondary)
                     .accessibilityIdentifier("effectsTarget")
             }
+            EffectFixturePicker(patch: patch, model: model)
             group("Chases", .chase)
             group("Overlays", .overlay)
             if !document.show.effects.isEmpty {
@@ -81,7 +83,11 @@ struct RunningEffectsBar: View {
             }
             ForEach(model.runningEffects, id: \.effectID) { r in
                 if let e = document.show.effects.first(where: { $0.id == r.effectID }) {
-                    RunningEffectRow(effect: e, model: model)
+                    RunningEffectRow(effect: e, model: model) {
+                        let ids = model.effectTargets.isEmpty ? document.show.patch.fixtures.map(\.id) : model.effectTargets
+                        let updated = model.retarget(e, to: ids)
+                        if let i = document.show.effects.firstIndex(where: { $0.id == e.id }) { document.show.effects[i] = updated }
+                    }
                 }
             }
         }
@@ -121,11 +127,19 @@ struct EffectButton: View {
 struct RunningEffectRow: View {
     let effect: Effect
     @ObservedObject var model: AppModel
+    /// Moves this effect onto the fixtures picked on the Playback page.
+    var usePicked: () -> Void
 
     var body: some View {
         HStack {
             Circle().fill(Color(hex: effect.colorHex)).frame(width: 12, height: 12)
-            Text(effect.name).frame(width: 130, alignment: .leading).lineLimit(1)
+            Text(effect.name).frame(width: 100, alignment: .leading).lineLimit(1)
+            Text("\(effect.fixtureIDs.count) fx").font(.caption).foregroundStyle(.secondary).frame(width: 34)
+                .accessibilityIdentifier("effectFixtureCount.\(effect.name)")
+            Button(action: usePicked) { Image(systemName: "scope") }
+                .help("Run on the picked fixtures")
+                .accessibilityLabel("Use picked fixtures for \(effect.name)")
+                .accessibilityIdentifier("effectRetarget.\(effect.name)")
             Slider(value: Binding(get: { model.effectLevel(effect.id) }, set: { model.setEffectLevel(effect.id, $0) }),
                    in: 0...1)
                 .accessibilityIdentifier("effectLevel.\(effect.name)")
@@ -158,5 +172,112 @@ struct EffectGrid<Item: Identifiable, Content: View>: View {
                 }
             }
         }
+    }
+}
+
+/// Pick which fixtures the preset effects run on. Click order is chase order; the stage preview picks too.
+struct EffectFixturePicker: View {
+    let patch: Patch
+    @ObservedObject var model: AppModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Text("Fixtures").font(.headline)
+                Button("All") { model.effectTargets = [] }.accessibilityIdentifier("effectPickAll")
+                Button("Odd") { pickEvery(from: 0) }
+                Button("Even") { pickEvery(from: 1) }
+                Button("Reverse") { model.effectTargets = currentOrder.reversed() }
+                    .disabled(model.effectTargets.isEmpty)
+                Menu("Type") {
+                    ForEach(patch.types.filter { t in patch.fixtures.contains { $0.typeID == t.id } }) { t in
+                        Button(t.name) { model.effectTargets = patch.fixtures.filter { $0.typeID == t.id }.map(\.id) }
+                    }
+                }
+                .fixedSize()
+            }
+            FlowChips(items: patch.fixtures) { f in
+                let order = model.effectTargets.firstIndex(of: f.id)
+                Button { toggle(f.id) } label: {
+                    HStack(spacing: 3) {
+                        if let order { Text("\(order + 1)").font(.caption2.bold()).monospacedDigit() }
+                        Text(f.name).lineLimit(1)
+                    }
+                    .padding(.horizontal, 8).padding(.vertical, 4)
+                    .background(Capsule().fill(order != nil ? Color.accentColor : Color.gray.opacity(0.25)))
+                    .foregroundStyle(order != nil ? Color.white : Color.primary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(f.name)
+                .accessibilityIdentifier("effectPick.\(f.name)")
+                .accessibilityValue(order != nil ? "picked" : "")
+            }
+            Text(model.effectTargets.isEmpty ? "Nothing picked: presets run on all fixtures. Click fixtures here or on the stage."
+                                             : "Numbers show chase order. Use the target button on a running effect to move it here.")
+                .font(.caption).foregroundStyle(.secondary)
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("effectFixturePicker")
+    }
+
+    private var currentOrder: [UUID] { model.effectTargets }
+
+    private func toggle(_ id: UUID) {
+        if let i = model.effectTargets.firstIndex(of: id) { model.effectTargets.remove(at: i) }
+        else { model.effectTargets.append(id) }
+    }
+
+    private func pickEvery(from start: Int) {
+        model.effectTargets = patch.fixtures.enumerated().filter { $0.offset % 2 == start }.map(\.element.id)
+    }
+}
+
+/// Wrapping row of chips.
+struct FlowChips<Item: Identifiable, Content: View>: View {
+    let items: [Item]
+    @ViewBuilder var content: (Item) -> Content
+
+    var body: some View {
+        WrapLayout(spacing: 6) { ForEach(items) { content($0) } }
+    }
+}
+
+struct WrapLayout: Layout {
+    var spacing: CGFloat = 6
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let rows = arrange(width: proposal.width ?? .infinity, subviews: subviews)
+        return CGSize(width: proposal.width ?? rows.map(\.width).max() ?? 0,
+                      height: rows.last.map { $0.y + $0.height } ?? 0)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        for row in arrange(width: bounds.width, subviews: subviews) {
+            var x = bounds.minX
+            for i in row.indices {
+                let s = subviews[i].sizeThatFits(.unspecified)
+                subviews[i].place(at: CGPoint(x: x, y: bounds.minY + row.y), proposal: ProposedViewSize(s))
+                x += s.width + spacing
+            }
+        }
+    }
+
+    private struct Row { var indices: [Int] = []; var width: CGFloat = 0; var height: CGFloat = 0; var y: CGFloat = 0 }
+
+    private func arrange(width: CGFloat, subviews: Subviews) -> [Row] {
+        var rows: [Row] = [Row()]
+        for i in subviews.indices {
+            let s = subviews[i].sizeThatFits(.unspecified)
+            if !rows[rows.count - 1].indices.isEmpty, rows[rows.count - 1].width + spacing + s.width > width {
+                let last = rows[rows.count - 1]
+                rows.append(Row(y: last.y + last.height + spacing))
+            }
+            var r = rows[rows.count - 1]
+            r.width += (r.indices.isEmpty ? 0 : spacing) + s.width
+            r.height = max(r.height, s.height)
+            r.indices.append(i)
+            rows[rows.count - 1] = r
+        }
+        return rows
     }
 }

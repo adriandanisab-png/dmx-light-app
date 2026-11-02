@@ -12,6 +12,8 @@ struct StageView: View {
     @ObservedObject var model: AppModel
     /// False on the Playback page: preview only, no editing, dragging or selecting.
     var editable = true
+    /// With `editable` false: fixtures can still be clicked to (de)select, but not moved.
+    var selectOnly = false
     @State private var background: NSImage?
     @State private var lasso: CGRect?
     @State private var dragStart: StagePoint?
@@ -53,6 +55,8 @@ struct StageView: View {
                             .allowsHitTesting(false)
                     }
                     fixtureOverlays(size: size)
+                    } else if selectOnly {
+                        fixtureOverlays(size: size)
                     }
                 }
                 .frame(width: size.width, height: size.height)
@@ -96,7 +100,9 @@ struct StageView: View {
                 .contentShape(Rectangle())
                 .position(x: p.x * size.width, y: p.y * size.height)
                 .onTapGesture {
-                    if isShift {
+                    if selectOnly {
+                        if selection.contains(f.id) { selection.removeAll { $0 == f.id } } else { selection.append(f.id) }
+                    } else if isShift {
                         if selection.contains(f.id) { selection.removeAll { $0 == f.id } } else { selection.append(f.id) }
                     } else {
                         selection = [f.id]
@@ -112,7 +118,7 @@ struct StageView: View {
                             x: min(max(start.x + g.translation.width / size.width, 0), 1),
                             y: min(max(start.y + g.translation.height / size.height, 0), 1))
                     }
-                    .onEnded { _ in dragStart = nil })
+                    .onEnded { _ in dragStart = nil }, including: editable ? .all : .subviews)
                 .accessibilityElement()
                 .accessibilityLabel(f.name)
                 .accessibilityIdentifier("stageFixture.\(f.id.uuidString)")
