@@ -12,14 +12,17 @@ struct CueListPanel: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text("Cue list").font(.title3.bold())
-                Menu {
-                    Button("None") { model.selectCueList(nil) }
-                    ForEach(lists) { l in Button(l.name) { model.selectCueList(l.id) } }
-                } label: {
-                    Text(model.activeCueList?.name ?? "Choose\u{2026}")
+                if !lists.isEmpty {
+                    // A popup in the window would take keyboard focus and swallow the B / T / Space shortcuts.
+                    Menu {
+                        Button("None") { model.selectCueList(nil) }
+                        ForEach(lists) { l in Button(l.name) { model.selectCueList(l.id) } }
+                    } label: {
+                        Text(model.activeCueList?.name ?? "Choose\u{2026}")
+                    }
+                    .fixedSize()
+                    .accessibilityIdentifier("cueListPicker")
                 }
-                .fixedSize()
-                .accessibilityIdentifier("cueListPicker")
                 Spacer()
                 Text(model.cueMode == .direct ? "Mode: Direct" : "Mode: Console")
                     .font(.callout).foregroundStyle(.secondary)

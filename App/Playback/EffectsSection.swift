@@ -15,7 +15,6 @@ struct EffectsSection: View {
         model.programmer.selection.isEmpty ? "all \(patch.fixtures.count) fixtures"
                                            : "\(model.programmer.selection.count) selected"
     }
-    private let columns = [GridItem(.adaptive(minimum: 104), spacing: 8)]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -38,12 +37,10 @@ struct EffectsSection: View {
             group("Overlays", .overlay)
             if !document.show.effects.isEmpty {
                 Text("Saved effects").font(.headline)
-                LazyVGrid(columns: columns, spacing: 8) {
-                    ForEach(document.show.effects) { e in
-                        EffectButton(title: e.name, subtitle: "\(e.fixtureIDs.count) fx", colorHex: e.colorHex,
-                                     isOn: model.isRunning(e.id), identifier: "effectButton.\(e.name)") {
-                            model.toggleEffect(e)
-                        }
+                EffectGrid(items: document.show.effects) { e in
+                    EffectButton(title: e.name, subtitle: "\(e.fixtureIDs.count) fx", colorHex: e.colorHex,
+                                 isOn: model.isRunning(e.id), identifier: "effectButton.\(e.name)") {
+                        model.toggleEffect(e)
                     }
                 }
             }
@@ -56,12 +53,10 @@ struct EffectsSection: View {
     private func group(_ title: String, _ category: EffectPresetCategory) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title).font(.headline)
-            LazyVGrid(columns: columns, spacing: 8) {
-                ForEach(EffectPresets.all.filter { $0.category == category }) { preset in
-                    EffectButton(title: preset.name, subtitle: nil, colorHex: preset.colorHex,
-                                 isOn: existing(preset).map { model.isRunning($0.id) } ?? false,
-                                 identifier: "effectPreset.\(preset.name)") { fire(preset) }
-                }
+            EffectGrid(items: EffectPresets.all.filter { $0.category == category }) { preset in
+                EffectButton(title: preset.name, subtitle: nil, colorHex: preset.colorHex,
+                             isOn: existing(preset).map { model.isRunning($0.id) } ?? false,
+                             identifier: "effectPreset.\(preset.name)") { fire(preset) }
             }
         }
     }
@@ -130,5 +125,25 @@ struct RunningEffectRow: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("runningEffect.\(effect.name)")
+    }
+}
+
+/// Four-column grid that is not lazy, so every button is always in the accessibility tree.
+struct EffectGrid<Item: Identifiable, Content: View>: View {
+    let items: [Item]
+    @ViewBuilder var content: (Item) -> Content
+    private let columns = 4
+
+    var body: some View {
+        Grid(horizontalSpacing: 8, verticalSpacing: 8) {
+            ForEach(Array(stride(from: 0, to: items.count, by: columns)), id: \.self) { start in
+                GridRow {
+                    ForEach(items[start..<min(start + columns, items.count)]) { content($0) }
+                    ForEach(0..<(start + columns - min(start + columns, items.count)), id: \.self) { _ in
+                        Color.clear.frame(maxWidth: .infinity, minHeight: 1)
+                    }
+                }
+            }
+        }
     }
 }
