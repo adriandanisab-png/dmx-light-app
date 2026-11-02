@@ -9,6 +9,8 @@ public struct Show: Codable, Equatable, Sendable {
     public var console: ConsoleMap
     public var snapshots: [Snapshot]
     public var stage: StagePlot
+    public var effects: [Effect]
+    public var cueLists: [CueList]
 
     public init() {
         formatVersion = Self.currentFormatVersion
@@ -16,6 +18,8 @@ public struct Show: Codable, Equatable, Sendable {
         console = ConsoleMap()
         snapshots = []
         stage = StagePlot()
+        effects = []
+        cueLists = []
     }
 
     // Additions since Plan 1 decode with defaults so older files still open.
@@ -26,6 +30,8 @@ public struct Show: Codable, Equatable, Sendable {
         console = try c.decode(ConsoleMap.self, forKey: .console)
         snapshots = try c.decodeIfPresent([Snapshot].self, forKey: .snapshots) ?? []
         stage = try c.decodeIfPresent(StagePlot.self, forKey: .stage) ?? StagePlot()
+        effects = try c.decodeIfPresent([Effect].self, forKey: .effects) ?? []
+        cueLists = try c.decodeIfPresent([CueList].self, forKey: .cueLists) ?? []
     }
 
     private struct VersionProbe: Decodable { var formatVersion: Int }
