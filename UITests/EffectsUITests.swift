@@ -57,17 +57,8 @@ final class EffectsUITests: DMXUITestCase {
 
         let stopWave = element("effectStop.Wave")
         XCTAssertTrue(stopWave.waitForExistence(timeout: 5))
-        // The running list reflows while effects start; retry the click if it landed mid-layout.
-        var stopped = false
-        for _ in 0..<3 where !stopped {
-            stopWave.click()
-            stopped = waitForValue("off", of: wave, timeout: 3)
-        }
-        if !stopped {
-            let tree = app.windows.firstMatch.debugDescription.replacingOccurrences(of: "\n", with: " ## ")
-            XCTFail("DIAG \(stopWave.frame) hittable=\(stopWave.isHittable) wave=\(String(describing: wave.value)) TREE \(tree)")
-        }
-        XCTAssertTrue(stopped, "stop button switches the effect off")
+        stopWave.click()
+        XCTAssertTrue(waitForValue("off", of: wave), "stop button switches the effect off")
         XCTAssertTrue(waitForValue("on", of: strobe))
     }
 

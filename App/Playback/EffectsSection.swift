@@ -22,16 +22,6 @@ struct EffectsSection: View {
                 Text("Effects").font(.title3.bold())
                 Text("on \(targetText)").font(.caption).foregroundStyle(.secondary)
                     .accessibilityIdentifier("effectsTarget")
-                Spacer()
-                TapTempoButton(model: model)
-            }
-            if !model.runningEffects.isEmpty {
-                Text("Running").font(.headline)
-                ForEach(model.runningEffects, id: \.effectID) { r in
-                    if let e = document.show.effects.first(where: { $0.id == r.effectID }) {
-                        RunningEffectRow(effect: e, model: model)
-                    }
-                }
             }
             group("Chases", .chase)
             group("Overlays", .overlay)
@@ -73,6 +63,29 @@ struct EffectsSection: View {
         let e = preset.makeEffect(fixtureIDs: ids)
         document.show.effects.append(e)
         model.startEffect(e)
+    }
+}
+
+/// Pinned above the scrolling buttons so the running effects, their levels and TAP stay in reach.
+struct RunningEffectsBar: View {
+    @Binding var document: ShowDocument
+    @ObservedObject var model: AppModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text("Running effects").font(.headline)
+                if model.runningEffects.isEmpty { Text("none").font(.caption).foregroundStyle(.secondary) }
+                Spacer()
+                TapTempoButton(model: model)
+            }
+            ForEach(model.runningEffects, id: \.effectID) { r in
+                if let e = document.show.effects.first(where: { $0.id == r.effectID }) {
+                    RunningEffectRow(effect: e, model: model)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 

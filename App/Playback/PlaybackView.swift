@@ -35,6 +35,9 @@ struct PlaybackView: View {
                 Spacer()
                 BlackoutButton(model: model)
             }
+            // Live controls stay pinned; only the buttons scroll.
+            CueListPanel(document: $document, model: model)
+            RunningEffectsBar(document: $document, model: model)
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     if snapshots.isEmpty {
@@ -52,8 +55,6 @@ struct PlaybackView: View {
                             }
                         }
                     }
-                    Divider()
-                    CueListPanel(document: $document, model: model)
                     Divider()
                     EffectsSection(document: $document, model: model)
                 }
