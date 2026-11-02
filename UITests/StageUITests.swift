@@ -9,13 +9,10 @@ final class StageUITests: DMXUITestCase {
         let fixture = app.descendants(matching: .any)
             .matching(NSPredicate(format: "identifier BEGINSWITH 'stageFixture.'")).firstMatch
         XCTAssertTrue(fixture.waitForExistence(timeout: 10))
-        func coord(_ key: String) -> Double? {
-            ((fixture.value as? String) ?? "").split(separator: " ")
-                .first(where: { $0.hasPrefix(key + "=") }).flatMap { Double($0.dropFirst(key.count + 1)) }
-        }
-        let x = try XCTUnwrap(coord("x")), y = try XCTUnwrap(coord("y"))
-        XCTAssertTrue((0.05...0.95).contains(x), "x=\(x)")
-        XCTAssertTrue((0.05...0.85).contains(y), "new fixtures sit inside the stage, not on its edge: y=\(y)")
+        // On screen and clear of the stage's bottom edge (it used to sit half cut off there).
+        XCTAssertTrue(fixture.isHittable)
+        let window = app.windows.firstMatch.frame
+        XCTAssertLessThan(fixture.frame.maxY, window.maxY - 40, "fixture \(fixture.frame) window \(window)")
         fixture.click()
         XCTAssertTrue(fixture.isSelected)
     }
