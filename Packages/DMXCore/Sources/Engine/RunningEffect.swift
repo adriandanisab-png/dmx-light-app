@@ -45,10 +45,14 @@ extension Engine {
             if let i = index(.intensity), let a = addr(i) {
                 frame[a] = byte(Double(frame[a]) * (1 - level) + target * 255 * level)
             } else if !type.channels.contains(where: { $0.function == .intensity }) {
-                let factor = 1 - level + level * min(max(target, 0), 1)
-                for (i, ch) in type.channels.enumerated() where Engine.isIntensity(ch.function, typeHasIntensity: false) {
-                    if let a = addr(i) { frame[a] = byte(Double(frame[a]) * factor) }
+                let t = min(max(target, 0), 1)
+                let factor = 1 - level + level * t
+                let outs = type.channels.enumerated().compactMap { i, ch in
+                    Engine.isIntensity(ch.function, typeHasIntensity: false) ? addr(i) : nil
                 }
+                // A dark fixture has nothing to scale: treat its base colour as white.
+                let dark = outs.allSatisfy { frame[$0] == 0 }
+                for a in outs { frame[a] = dark ? byte(255 * level * t) : byte(Double(frame[a]) * factor) }
             }
         }
 

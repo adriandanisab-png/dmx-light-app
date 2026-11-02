@@ -107,3 +107,15 @@ private func effectInput(_ r: Rig, _ e: Effect, level: Double = 1, start: TimeIn
     i.runningEffects = [RunningEffect(effectID: UUID(), startedAt: 0)]
     #expect(Engine.render(i, at: 0) == Engine.render(r.input(), at: 0))
 }
+
+@Test func chaseLightsDarkRGBPars() {
+    let r = Rig()
+    // Nothing playing: a chase on dimmer-less pars must still light the lit step white.
+    let e = Effect(kind: .intensityChase, fixtureIDs: [r.par1.id], spread: 0)
+    var lit = false
+    for t in stride(from: 0.0, to: 1.0, by: 0.05) {
+        let f = Engine.render(effectInput(r, e), at: t)
+        if f[1] > 0 { #expect(f[1] == f[2] && f[2] == f[3]); lit = true }
+    }
+    #expect(lit)
+}
