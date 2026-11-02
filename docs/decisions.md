@@ -55,3 +55,14 @@ Plan 2 Task 7 asked for a UI test that drags a fixture on the stage. On GitHub's
 ## 2026-11-02: stage preview on the Playback page
 
 Owner request: see the whole show while playing back. The Playback page shows a read-only `StageView` (`editable: false`) beside the controls, in a resizable split.
+
+## 2026-11-02: Plan 3 UI (effects, presets, cue lists)
+
+- Effects on fixtures without an intensity channel start from white when all their colour channels are 0 (`chaseLightsDarkRGBPars`), so a chase on dark RGB pars lights them.
+- `Effect.overlay` (decodeIfPresent, default false) marks overlays; chases are exclusive in the UI (`AppModel.startEffect` stops other running chases), overlays stack. Presets set it from their category.
+- Playback page: preset buttons (Chases / Overlays) create the effect on the programmer selection (all patched fixtures when nothing is selected) and toggle it. The cue panel (GO on Space, Back) and the running-effects bar (effect master slider, stop, TAP on T) are pinned above the scrolling button grids, so they never scroll out of reach. BPM is a readout you click to type into: a permanent text field took the window's initial focus and swallowed the B / T / Space shortcuts.
+- Effect grids are not lazy (`LazyVGrid` left off-screen buttons out of the accessibility tree).
+- Cue lists: a Console part can be a console look or "Current console state" (`.targets`). A GO that skips cues shows one toast ("Skipped cue 2: no console part. End of cue list"). A single cue list is selected automatically. Editing a list while it plays keeps the current cue without replaying it.
+- Output mode lives in UserDefaults, so the UI tests launch with `-outputMode previewOnly`; the cue list test switches to Console mode and used to leak that into the next test (B then fired the console blackout).
+- `EngineRunnerTests.tickRateApprox` upper bound on CI raised to 60 frames: timer catch-up bursts gave 45–46.
+- No drag tests; the Library cue editor and effect editor are driven by clicks only.
