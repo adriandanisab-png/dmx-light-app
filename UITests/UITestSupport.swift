@@ -3,11 +3,14 @@ import XCTest
 /// Shared helpers for the Plan 2 UI tests. These run on GitHub CI (no Xcode locally).
 class DMXUITestCase: XCTestCase {
     var app: XCUIApplication!
+    /// Subclasses add launch arguments (e.g. "-useRecordingMIDI").
+    var extraLaunchArguments: [String] { [] }
 
     override func setUpWithError() throws {
         continueAfterFailure = false
         app = XCUIApplication()
         app.launchArguments += ["-ApplePersistenceIgnoreState", "YES"]  // no restored windows from earlier tests
+        app.launchArguments += extraLaunchArguments
         app.launch()
         // Dismiss the launch Open panel if present, then make a new untitled document.
         if app.buttons["New Document"].firstMatch.waitForExistence(timeout: 3) {
@@ -26,6 +29,9 @@ class DMXUITestCase: XCTestCase {
         XCTAssertTrue(tab.waitForExistence(timeout: 10), "tab \(name)")
         tab.click()
     }
+
+    /// Text exposes its string as `.value` on macOS.
+    func text(of el: XCUIElement) -> String { (el.value as? String) ?? el.label }
 
     func waitForValue(_ value: String, of el: XCUIElement, timeout: TimeInterval = 5) -> Bool {
         let predicate = NSPredicate(format: "value == %@", value)

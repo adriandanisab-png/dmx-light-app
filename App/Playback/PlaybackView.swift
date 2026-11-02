@@ -35,21 +35,29 @@ struct PlaybackView: View {
                 Spacer()
                 BlackoutButton(model: model)
             }
-            if snapshots.isEmpty {
-                Text("No snapshots yet. Record one in the Programmer tab.")
-                    .foregroundStyle(.secondary).frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 8) {
-                    ForEach(Array(pageSnapshots.enumerated()), id: \.element.id) { i, snap in
-                        PlaybackButton(snapshot: snap, slot: i + 1,
-                                       isOn: model.activeSnapshots.contains(snap.id),
-                                       isSelected: selectedID == snap.id) { layered in
-                            selectedID = snap.id
-                            model.recall(snap.id, layered: layered, fade: nil)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    if snapshots.isEmpty {
+                        Text("No snapshots yet. Record one in the Programmer tab.")
+                            .foregroundStyle(.secondary).frame(maxWidth: .infinity, minHeight: 60)
+                    } else {
+                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 8) {
+                            ForEach(Array(pageSnapshots.enumerated()), id: \.element.id) { i, snap in
+                                PlaybackButton(snapshot: snap, slot: i + 1,
+                                               isOn: model.activeSnapshots.contains(snap.id),
+                                               isSelected: selectedID == snap.id) { layered in
+                                    selectedID = snap.id
+                                    model.recall(snap.id, layered: layered, fade: nil)
+                                }
+                            }
                         }
                     }
+                    Divider()
+                    CueListPanel(document: $document, model: model)
+                    Divider()
+                    EffectsSection(document: $document, model: model)
                 }
-                Spacer(minLength: 0)
+                .padding(.trailing, 4)
             }
             if model.outputMode == .consoleMIDI { consoleLooks }
             HStack {

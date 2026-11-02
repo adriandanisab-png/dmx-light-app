@@ -25,3 +25,12 @@ Record results (including the best refresh rate) in `docs/console-midi-findings.
 
 Safety: the adapter port is only opened while ARMED. Blackout is key **B**.
 
+
+## Part 3: effects and the cue backup drill
+
+Needs Plan 3 (effects, tap tempo, cue lists). Allow about 30 minutes.
+
+1. Build a 4-cue list (Library tab, New cue list). Play a look on the Playback page, then press "Add cue from current look" in the editor for each cue. Give every cue a Console part (a console look, or "Current console state" after setting the console by hand). The banner "N cues have no console backup" must disappear.
+2. Run the list in Direct mode with GO (Space). Check fades and that Back returns to the previous cue.
+3. At cue 2, simulate a failure: pull the USB cable, move the DMX cable to the console, switch the output mode to Console (Devices tab), press ARM, and press GO. Cue 3 should come up from the console. Note any cue that is skipped ("Skipped cue N: no console part").
+4. Run a Rainbow and a Chase at a tempo set with TAP (key T) for 10 minutes. Note any flicker. Check that a chase on RGB pars without a dimmer lights them white, and that Strobe stacks over the chase with its own level slider.

@@ -17,7 +17,7 @@ public struct EffectPreset: Identifiable, Sendable {
 
     public func makeEffect(fixtureIDs: [UUID]) -> Effect {
         Effect(name: name, colorHex: colorHex, kind: kind, fixtureIDs: fixtureIDs, rateMultiplier: rate,
-               size: size, spread: spread, direction: direction, colors: colors)
+               size: size, spread: spread, direction: direction, colors: colors, overlay: category == .overlay)
     }
 }
 

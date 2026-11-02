@@ -17,6 +17,8 @@ struct ShowRootView: View {
                 .tabItem { Text("Programmer") }
             PlaybackView(document: $document, model: model)
                 .tabItem { Text("Playback") }
+            LibraryView(document: $document, model: model)
+                .tabItem { Text("Library") }
             DevicesView(document: $document, model: model)
                 .tabItem { Text("Devices") }
             ConsoleView(document: $document, model: model)
@@ -53,6 +55,9 @@ struct ShowRootView: View {
         }
         .onChange(of: document.show.patch) { _, _ in model.loadShow(document.show) }
         .onChange(of: document.show.snapshots) { _, _ in model.loadShow(document.show) }
+        .onChange(of: document.show.effects) { _, _ in model.loadShow(document.show) }
+        .onChange(of: document.show.cueLists) { _, _ in model.loadShow(document.show) }
+        .onChange(of: document.show.console) { _, _ in model.loadShow(document.show) }
     }
 
     private var selectionBinding: Binding<[UUID]> {

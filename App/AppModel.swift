@@ -3,6 +3,7 @@ import Combine
 import ShowModel
 import DMXOutput
 import Engine
+import Effects
 import ConsoleMIDI
 
 /// Where DMX goes. Stored per Mac in UserDefaults, not in the show.
@@ -47,11 +48,25 @@ final class AppModel: ObservableObject {
         didSet { let v = blackout; runner.update { $0.blackout = v } }
     }
 
+    @Published private(set) var runningEffects: [RunningEffect] = []
+    @Published private(set) var bpm: Double = 120
+    @Published private(set) var activeCueListID: UUID?
+    @Published private(set) var cueCurrent: Cue?
+
     let runner: EngineRunner
     let console: ConsoleController
     private var patch = Patch()
     private var snapshots: [UUID: Snapshot] = [:]
     private var directDevice: OpenDMXOutput?
+    private var show = Show()
+    private var effects: [UUID: Effect] = [:]
+    private var tapTempo = TapTempo()
+    private var previewEffect: Effect?
+    private var previewStartedAt: TimeInterval = 0
+    private var player: CueListPlayer?
+    private var cueStartedAt: TimeInterval = 0
+    private var followArmed = false
+    private var followTask: Task<Void, Never>?
 
     /// UI tests inject a connected `RecordingMIDISender` with the `-useRecordingMIDI` launch argument.
     private let usesRecordingMIDI: Bool
@@ -99,6 +114,8 @@ final class AppModel: ObservableObject {
 
     /// Pushes the patch and snapshots from the document into the engine.
     func loadShow(_ show: Show) {
+        self.show = show
+        loadConsoleMap(show.console)
         patch = show.patch
         snapshots = Dictionary(show.snapshots.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
         let p = show.patch, s = snapshots
@@ -114,6 +131,10 @@ final class AppModel: ObservableObject {
             activeSnapshots = stillActive
             runner.update { input in input.playbacks.removeAll { s[$0.snapshotID] == nil } }
         }
+        effects = Dictionary(show.effects.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+        runningEffects.removeAll { effects[$0.effectID] == nil }
+        pushEffects()
+        if activeCueListID != nil { rebuildPlayer() }
     }
 
     // MARK: Programmer
@@ -175,7 +196,7 @@ final class AppModel: ObservableObject {
         if layered, activeSnapshots.contains(snapshotID) { release(snapshotID); return }
         var input = runner.currentInput()
         let now = runner.now()
-        input.grandMaster = 1; input.blackout = false; input.programmer = Programmer()
+        input.grandMaster = 1; input.blackout = false; input.programmer = Programmer(); input.runningEffects = []
         let from = Engine.render(input, at: now)
         let pb = PlaybackState(snapshotID: snapshotID, startedAt: now,
                                fade: max(fade ?? snap.defaultFade, 0), fadeFrom: from)
@@ -191,6 +212,182 @@ final class AppModel: ObservableObject {
     func release(_ snapshotID: UUID) {
         activeSnapshots.removeAll { $0 == snapshotID }
         runner.update { input in input.playbacks.removeAll { $0.snapshotID == snapshotID } }
+    }
+
+    // MARK: Effects
+
+    /// Engine input = saved effects + the editor's live preview (if any).
+    private func pushEffects() {
+        var fx = effects
+        var run = runningEffects
+        if let p = previewEffect {
+            fx[p.id] = p
+            if !run.contains(where: { $0.effectID == p.id }) {
+                run.append(RunningEffect(effectID: p.id, startedAt: previewStartedAt, level: 1))
+            }
+        }
+        let b = bpm, effectsNow = fx, runNow = run
+        runner.update { $0.effects = effectsNow; $0.runningEffects = runNow; $0.bpm = b }
+    }
+
+    func isRunning(_ id: UUID) -> Bool { runningEffects.contains { $0.effectID == id } }
+
+    func effectLevel(_ id: UUID) -> Double { runningEffects.first { $0.effectID == id }?.level ?? 0 }
+
+    /// Starts (or re-levels) an effect. Chases are exclusive: starting one stops the other chases.
+    func startEffect(_ effect: Effect, level: Double = 1) {
+        effects[effect.id] = effect
+        if !effect.overlay {
+            runningEffects.removeAll { $0.effectID != effect.id && effects[$0.effectID]?.overlay == false }
+        }
+        let l = min(max(level, 0), 1)
+        if let i = runningEffects.firstIndex(where: { $0.effectID == effect.id }) {
+            runningEffects[i].level = l
+        } else {
+            runningEffects.append(RunningEffect(effectID: effect.id, startedAt: runner.now(), level: l))
+        }
+        pushEffects()
+    }
+
+    func stopEffect(_ id: UUID) {
+        runningEffects.removeAll { $0.effectID == id }
+        pushEffects()
+    }
+
+    func toggleEffect(_ effect: Effect) {
+        if isRunning(effect.id) { stopEffect(effect.id) } else { startEffect(effect) }
+    }
+
+    func setEffectLevel(_ id: UUID, _ level: Double) {
+        guard let i = runningEffects.firstIndex(where: { $0.effectID == id }) else { return }
+        runningEffects[i].level = min(max(level, 0), 1)
+        pushEffects()
+    }
+
+    /// The effect editor shows its draft live on the stage; nil ends the preview.
+    func setPreview(_ effect: Effect?) {
+        if effect != nil, previewEffect == nil { previewStartedAt = runner.now() }
+        previewEffect = effect
+        pushEffects()
+    }
+
+    func tapTempoTap() {
+        tapTempo.tap(at: runner.now())
+        bpm = tapTempo.bpm
+        pushEffects()
+    }
+
+    func setBPM(_ value: Double) {
+        tapTempo.set(bpm: value)
+        bpm = tapTempo.bpm
+        pushEffects()
+    }
+
+    // MARK: Cue lists
+
+    var cueMode: CueMode { outputMode == .consoleMIDI ? .console : .direct }
+
+    var activeCueList: CueList? { show.cueLists.first { $0.id == activeCueListID } }
+
+    /// The cue after the current one (the first cue when nothing has played; wraps when the list loops).
+    var cueNext: Cue? {
+        guard let list = activeCueList else { return nil }
+        let cues = list.cues.sorted { $0.number < $1.number }
+        guard let cur = cueCurrent else { return cues.first }
+        return cues.first { $0.number > cur.number } ?? (list.loops ? cues.first : nil)
+    }
+
+    func selectCueList(_ id: UUID?) {
+        followArmed = false
+        cueCurrent = nil
+        guard let id, let list = show.cueLists.first(where: { $0.id == id }) else {
+            activeCueListID = nil; player = nil; followTask?.cancel(); followTask = nil
+            return
+        }
+        activeCueListID = id
+        player = CueListPlayer(list: list, show: show)
+        startFollowTimer()
+    }
+
+    /// The list or show changed: rebuild the player but stay on the current cue without replaying it.
+    private func rebuildPlayer() {
+        guard let list = activeCueList else { selectCueList(nil); return }
+        var p = CueListPlayer(list: list, show: show)
+        if let n = cueCurrent?.number { _ = p.jump(to: n, mode: cueMode) }
+        player = p
+        cueCurrent = p.currentCue
+    }
+
+    func go() { run { $0.go(mode: cueMode) } }
+    func back() { run { $0.back(mode: cueMode) } }
+
+    private func run(_ step: (inout CueListPlayer) -> [CueAction]) {
+        guard var p = player else { showToast("Pick a cue list first"); return }
+        let actions = step(&p)
+        player = p
+        cueCurrent = p.currentCue
+        var notes: [String] = []
+        var played = false
+        for action in actions {
+            switch action {
+            case let .playDirect(cue): playDirect(cue); played = true
+            case let .playConsole(cue): playConsole(cue); played = true
+            case let .skipped(cue, reason): notes.append("Skipped cue \(Self.numberText(cue.number)): \(reason)")
+            case .end: notes.append(p.currentCue == nil ? "No cue for this mode" : "End of cue list")
+            }
+        }
+        followArmed = played
+        if played { cueStartedAt = runner.now() }
+        if !notes.isEmpty { showToast(notes.joined(separator: ". ")) }
+    }
+
+    static func numberText(_ n: Double) -> String { String(format: "%g", n) }
+
+    /// Replaces the playbacks with the cue's snapshots (fading over `cue.fade`) and its effects.
+    private func playDirect(_ cue: Cue) {
+        let part = cue.direct ?? DirectCuePart()
+        let ids = part.snapshotIDs.filter { snapshots[$0] != nil }
+        var input = runner.currentInput()
+        let now = runner.now()
+        input.grandMaster = 1; input.blackout = false; input.programmer = Programmer(); input.runningEffects = []
+        let from = Engine.render(input, at: now)
+        let pbs = ids.map { PlaybackState(snapshotID: $0, startedAt: now, fade: max(cue.fade, 0), fadeFrom: from) }
+        activeSnapshots = ids
+        runner.update { $0.playbacks = pbs }
+        let old = runningEffects
+        runningEffects = part.effectIDs.filter { effects[$0] != nil }.map { id in
+            old.first { $0.effectID == id } ?? RunningEffect(effectID: id, startedAt: now, level: 1)
+        }
+        pushEffects()
+    }
+
+    private func playConsole(_ cue: Cue) {
+        let look: ConsoleLook
+        switch cue.console {
+        case let .look(id)?:
+            guard let l = console.map.looks.first(where: { $0.id == id }) else { return }
+            look = l
+        case let .targets(set)?: look = ConsoleLook(id: UUID(), name: "", targets: set)
+        case nil: return
+        }
+        Task { await recall(look) }
+    }
+
+    /// 20 Hz main-actor timer for auto-follow cues.
+    private func startFollowTimer() {
+        followTask?.cancel()
+        followTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(50))
+                self?.followTick()
+            }
+        }
+    }
+
+    private func followTick() {
+        guard followArmed, let p = player, p.nextAutoFollow(at: runner.now(), cueStartedAt: cueStartedAt) else { return }
+        followArmed = false
+        go()
     }
 
     // MARK: Output mode and arming
