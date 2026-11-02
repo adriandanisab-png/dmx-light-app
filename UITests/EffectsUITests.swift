@@ -63,6 +63,10 @@ final class EffectsUITests: DMXUITestCase {
             stopWave.click()
             stopped = waitForValue("off", of: wave, timeout: 3)
         }
+        if !stopped {
+            print("DIAGDUMP", stopWave.frame, stopWave.isHittable, wave.value ?? "nil")
+            print("DIAGTREE", app.windows.firstMatch.debugDescription.replacingOccurrences(of: "\n", with: " ## "))
+        }
         XCTAssertTrue(stopped, "stop button switches the effect off")
         XCTAssertTrue(waitForValue("on", of: strobe))
     }
