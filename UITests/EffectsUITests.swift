@@ -55,8 +55,10 @@ final class EffectsUITests: DMXUITestCase {
         XCTAssertTrue(waitForValue("on", of: wave), "overlays stack over a chase")
         XCTAssertTrue(element("effectLevel.Strobe").waitForExistence(timeout: 5))
 
-        element("effectStop.Wave").click()
-        XCTAssertTrue(waitForValue("off", of: wave))
+        let stopWave = element("effectStop.Wave")
+        XCTAssertTrue(stopWave.waitForExistence(timeout: 5))
+        stopWave.click()
+        XCTAssertTrue(waitForValue("off", of: wave, timeout: 8), "stop button switches the effect off")
         XCTAssertTrue(waitForValue("on", of: strobe))
     }
 
