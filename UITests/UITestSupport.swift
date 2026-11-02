@@ -10,6 +10,8 @@ class DMXUITestCase: XCTestCase {
         continueAfterFailure = false
         app = XCUIApplication()
         app.launchArguments += ["-ApplePersistenceIgnoreState", "YES"]  // no restored windows from earlier tests
+        // The output mode is stored in UserDefaults; pin it so a test that switches mode can't leak into the next.
+        app.launchArguments += ["-outputMode", "previewOnly"]
         app.launchArguments += extraLaunchArguments
         app.launch()
         // Dismiss the launch Open panel if present, then make a new untitled document.

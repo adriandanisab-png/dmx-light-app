@@ -35,7 +35,7 @@ struct PlaybackView: View {
                 Spacer()
                 BlackoutButton(model: model)
             }
-            DiagScroll {
+            ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     if snapshots.isEmpty {
                         Text("No snapshots yet. Record one in the Programmer tab.")
@@ -53,9 +53,9 @@ struct PlaybackView: View {
                         }
                     }
                     Divider()
-                    if !Diag.has("-diagNoCue") { CueListPanel(document: $document, model: model) }
+                    CueListPanel(document: $document, model: model)
                     Divider()
-                    if !Diag.has("-diagNoEffects") { EffectsSection(document: $document, model: model) }
+                    EffectsSection(document: $document, model: model)
                 }
                 .padding(.trailing, 4)
             }
@@ -107,13 +107,5 @@ struct PlaybackView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-    }
-}
-
-enum Diag { static func has(_ a: String) -> Bool { ProcessInfo.processInfo.arguments.contains(a) } }
-struct DiagScroll<C: View>: View {
-    @ViewBuilder var content: () -> C
-    var body: some View {
-        if Diag.has("-diagNoScroll") { content() } else { ScrollView { content() } }
     }
 }
