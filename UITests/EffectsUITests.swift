@@ -65,8 +65,10 @@ final class EffectsUITests: DMXUITestCase {
         let field = element("bpmField")
         XCTAssertTrue(field.waitForExistence(timeout: 5))
         field.click()
-        field.typeKey("a", modifierFlags: .command)
-        field.typeText("90\r")
-        XCTAssertTrue(waitForValue("90", of: field))
+        let editor = element("bpmEditor")
+        XCTAssertTrue(editor.waitForExistence(timeout: 5))
+        editor.typeKey("a", modifierFlags: .command)
+        editor.typeText("90\r")
+        XCTAssertTrue(waitForValue("90", of: element("bpmField")))
     }
 }
