@@ -14,6 +14,7 @@ final class PlaybackUITests: DMXUITestCase {
         button.click()
         XCTAssertTrue(waitForValue("on", of: button))
         XCTAssertTrue(element("fadeTimeField").waitForExistence(timeout: 5), "fade time is editable on this page")
+        XCTAssertTrue(element("playbackStagePreview").exists, "the stage preview is visible while playing back")
 
         app.typeKey("b", modifierFlags: [])
         let blackout = element("blackoutButton")

@@ -17,7 +17,6 @@ jobs:
         run: brew install xcodegen && xcodegen generate
       - name: Build and test app
         id: uitests
-        continue-on-error: true  # TEMP: let the app artifact build while UI tests are being fixed
         run: |
           set -o pipefail
           xcodebuild test -scheme DMXBridge -destination 'platform=macOS' -resultBundlePath build/UITests.xcresult \
@@ -29,7 +28,7 @@ jobs:
             -destination 'generic/platform=macOS' CODE_SIGN_IDENTITY=- build | tail -n 20
           cd build/Build/Products/Release && ditto -c -k --keepParent DMXBridge.app DMXBridge.zip
       - name: Upload test results on failure
-        if: steps.uitests.outcome == 'failure'
+        if: failure() && steps.uitests.outcome == 'failure'
         uses: actions/upload-artifact@v4
         with:
           name: UITests-xcresult

@@ -47,3 +47,11 @@ The owner asked to continue to Plan 2 (preview, fades) before running hardware t
 - The Library is a list in the Programmer tab (`librarySnapshot.N`). The `frameSum=N` debug value is the accessibility value of `outputStatus`; the UI test asserts `frameSum=0` after blackout.
 - `OpenDMXOutput` send loop now uses absolute deadlines: with relative sleeps `refreshRateApprox` measured 25 writes/s instead of 30 under load (sleep overshoot accumulated).
 - New UI tests (`StageUITests`, `ProgrammerUITests`, `PlaybackUITests`, shared `UITestSupport.swift`) were not run locally; expect query adjustments after the first CI run.
+
+## 2026-11-02: Stage drag not covered by a UI test
+
+Plan 2 Task 7 asked for a UI test that drags a fixture on the stage. On GitHub's macOS runners the synthetic XCUITest drag selects the fixture but never reaches the SwiftUI `DragGesture` (seen in the test's screen recording). The owner confirmed dragging works by hand. `StageUITests` now checks that new fixtures are placed inside the stage and that clicking one selects it. Dragging stays a manual check.
+
+## 2026-11-02: stage preview on the Playback page
+
+Owner request: see the whole show while playing back. The Playback page shows a read-only `StageView` (`editable: false`) beside the controls, in a resizable split.

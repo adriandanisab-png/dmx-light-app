@@ -18,6 +18,16 @@ struct PlaybackView: View {
     }
 
     var body: some View {
+        HSplitView {
+            controls.frame(minWidth: 420)
+            // Live preview of the whole show while playing it back.
+            StageView(document: $document, selection: .constant([]), model: model, editable: false)
+                .frame(minWidth: 280)
+                .accessibilityIdentifier("playbackStagePreview")
+        }
+    }
+
+    private var controls: some View {
         VStack(spacing: 10) {
             ProgrammerBanner(model: model)
             HStack(spacing: 16) {

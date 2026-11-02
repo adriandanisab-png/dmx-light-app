@@ -10,17 +10,20 @@ struct StageView: View {
     @Binding var document: ShowDocument
     @Binding var selection: [UUID]
     @ObservedObject var model: AppModel
+    /// False on the Playback page: preview only, no editing, dragging or selecting.
+    var editable = true
     @State private var background: NSImage?
     @State private var lasso: CGRect?
     @State private var dragStart: StagePoint?
 
     var body: some View {
         VStack(spacing: 0) {
-            StageEditorToolbar(document: $document)
+            if editable { StageEditorToolbar(document: $document) }
             GeometryReader { geo in
                 let size = geo.size
                 ZStack {
                     canvas(size: size)
+                    if editable {
                     // Background drag layer: lasso, and click on empty stage clears the selection.
                     Color.clear.contentShape(Rectangle())
                         .gesture(DragGesture(minimumDistance: 0)
@@ -50,6 +53,7 @@ struct StageView: View {
                             .allowsHitTesting(false)
                     }
                     fixtureOverlays(size: size)
+                    }
                 }
                 .frame(width: size.width, height: size.height)
                 .clipped()
@@ -113,6 +117,7 @@ struct StageView: View {
                 .accessibilityLabel(f.name)
                 .accessibilityIdentifier("stageFixture.\(f.id.uuidString)")
                 .accessibilityValue(StagePreviewModel.positionText(p))
+                .accessibilityAddTraits(selection.contains(f.id) ? .isSelected : [])
         }
     }
 }
