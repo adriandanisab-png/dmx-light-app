@@ -98,7 +98,7 @@ struct StageView: View {
                         selection = [f.id]
                     }
                 }
-                .gesture(DragGesture(minimumDistance: 3)
+                .highPriorityGesture(DragGesture(minimumDistance: 3)  // wins over the stage's lasso
                     .onChanged { g in
                         if dragStart == nil { dragStart = p }
                         guard let start = dragStart, size.width > 0, size.height > 0,

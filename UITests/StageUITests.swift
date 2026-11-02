@@ -9,7 +9,7 @@ final class StageUITests: DMXUITestCase {
         XCTAssertTrue(fixture.waitForExistence(timeout: 10))
         let before = (fixture.value as? String) ?? ""
         let start = fixture.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
-        start.press(forDuration: 0.1, thenDragTo: start.withOffset(CGVector(dx: 100, dy: 0)))
+        start.press(forDuration: 0.5, thenDragTo: start.withOffset(CGVector(dx: 100, dy: 0)))
         let moved = NSPredicate(format: "value != %@", before)
         XCTAssertEqual(XCTWaiter().wait(for: [XCTNSPredicateExpectation(predicate: moved, object: fixture)], timeout: 5), .completed)
         func x(_ s: String) -> Double? {

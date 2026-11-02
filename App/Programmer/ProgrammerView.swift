@@ -89,11 +89,15 @@ struct ProgrammerView: View {
             ForEach(Array(document.show.snapshots.enumerated()), id: \.element.id) { index, snap in
                 HStack {
                     Circle().fill(Color(hex: snap.colorHex)).frame(width: 12, height: 12)
-                    Text(snap.name).accessibilityIdentifier("librarySnapshot.\(index)")
+                    Text(snap.name)
+                        .accessibilityLabel(snap.name)
+                        .accessibilityIdentifier("librarySnapshot.\(index)")
                     Spacer()
                     Button { document.show.snapshots.removeAll { $0.id == snap.id } } label: { Image(systemName: "trash") }
                         .buttonStyle(.borderless)
+                        .accessibilityLabel("Delete \(snap.name)")
                 }
+                .accessibilityElement(children: .contain)
             }
         }
         .accessibilityIdentifier("library")

@@ -8,13 +8,14 @@ enum StagePreviewModel {
     /// Strobe is drawn at no more than 10 Hz regardless of the fixture's rate.
     static let maxStrobeDrawHz = 10.0
 
-    /// Where each fixture is drawn: its position, or lined up along the bottom edge when it has none.
+    /// Where each fixture is drawn: its position, or lined up across the front of the stage when it has none
+    /// (far enough from the edge that the glyph and its name stay visible).
     static func positions(for patch: Patch) -> [UUID: StagePoint] {
         let unplaced = patch.fixtures.filter { $0.stagePosition == nil }
         var result: [UUID: StagePoint] = [:]
         for f in patch.fixtures { if let p = f.stagePosition { result[f.id] = p } }
         for (i, f) in unplaced.enumerated() {
-            result[f.id] = StagePoint(x: (Double(i) + 1) / (Double(unplaced.count) + 1), y: 0.94)
+            result[f.id] = StagePoint(x: (Double(i) + 1) / (Double(unplaced.count) + 1), y: 0.8)
         }
         return result
     }
