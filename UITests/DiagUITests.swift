@@ -11,9 +11,7 @@ class DiagBase: DMXUITestCase {
         XCTFail("RESULT \(extraLaunchArguments): \(blackout.value as? String ?? "?")")
     }
 }
-final class DiagNone: DiagBase { func testD() { run1() } }
-final class DiagNoEffects: DiagBase { override var extraLaunchArguments: [String] { ["-diagNoEffects"] }; func testD() { run1() } }
-final class DiagNoCue: DiagBase { override var extraLaunchArguments: [String] { ["-diagNoCue"] }; func testD() { run1() } }
-final class DiagNoScroll: DiagBase { override var extraLaunchArguments: [String] { ["-diagNoScroll"] }; func testD() { run1() } }
-final class DiagNoBoth: DiagBase { override var extraLaunchArguments: [String] { ["-diagNoCue", "-diagNoEffects"] }; func testD() { run1() } }
-final class DiagAllOff: DiagBase { override var extraLaunchArguments: [String] { ["-diagNoCue", "-diagNoEffects", "-diagNoScroll"] }; func testD() { run1() } }
+final class DiagNoLib: DiagBase { override var extraLaunchArguments: [String] { ["-diagNoLibrary"] }; func testD() { run1() } }
+final class DiagNoOC: DiagBase { override var extraLaunchArguments: [String] { ["-diagNoOnChange"] }; func testD() { run1() } }
+final class DiagNoLibOC: DiagBase { override var extraLaunchArguments: [String] { ["-diagNoOnChange", "-diagNoLibrary"] }; func testD() { run1() } }
+final class DiagAll: DiagBase { override var extraLaunchArguments: [String] { ["-diagNoCue", "-diagNoEffects", "-diagNoScroll", "-diagNoOnChange", "-diagNoLibrary"] }; func testD() { run1() } }
