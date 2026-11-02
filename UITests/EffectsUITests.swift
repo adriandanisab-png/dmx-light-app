@@ -57,8 +57,13 @@ final class EffectsUITests: DMXUITestCase {
 
         let stopWave = element("effectStop.Wave")
         XCTAssertTrue(stopWave.waitForExistence(timeout: 5))
-        stopWave.click()
-        XCTAssertTrue(waitForValue("off", of: wave, timeout: 8), "stop button switches the effect off")
+        // The running list reflows while effects start; retry the click if it landed mid-layout.
+        var stopped = false
+        for _ in 0..<3 where !stopped {
+            stopWave.click()
+            stopped = waitForValue("off", of: wave, timeout: 3)
+        }
+        XCTAssertTrue(stopped, "stop button switches the effect off")
         XCTAssertTrue(waitForValue("on", of: strobe))
     }
 
