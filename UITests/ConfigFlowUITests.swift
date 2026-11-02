@@ -6,6 +6,7 @@ final class ConfigFlowUITests: XCTestCase {
     override func setUpWithError() throws {
         continueAfterFailure = false
         app = XCUIApplication()
+        app.launchArguments += ["-ApplePersistenceIgnoreState", "YES"]  // no restored windows from earlier tests
         app.launch()
         // If the app shows an Open panel instead of an untitled document, create one.
         // Dismiss the launch Open panel if present, then make a new untitled document.

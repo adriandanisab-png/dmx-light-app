@@ -7,6 +7,7 @@ class DMXUITestCase: XCTestCase {
     override func setUpWithError() throws {
         continueAfterFailure = false
         app = XCUIApplication()
+        app.launchArguments += ["-ApplePersistenceIgnoreState", "YES"]  // no restored windows from earlier tests
         app.launch()
         // Dismiss the launch Open panel if present, then make a new untitled document.
         if app.buttons["New Document"].firstMatch.waitForExistence(timeout: 3) {
@@ -21,7 +22,7 @@ class DMXUITestCase: XCTestCase {
     }
 
     func openTab(_ name: String) {
-        let tab = app.radioButtons[name].exists ? app.radioButtons[name] : app.tabs[name]
+        let tab = app.radioButtons[name].exists ? app.radioButtons[name].firstMatch : app.tabs[name].firstMatch
         XCTAssertTrue(tab.waitForExistence(timeout: 10), "tab \(name)")
         tab.click()
     }

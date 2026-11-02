@@ -6,6 +6,7 @@ final class ConsoleFlowUITests: XCTestCase {
     override func setUpWithError() throws {
         continueAfterFailure = false
         app = XCUIApplication()
+        app.launchArguments += ["-ApplePersistenceIgnoreState", "YES"]  // no restored windows from earlier tests
         // Replace CoreMIDI with a connected RecordingMIDISender.
         app.launchArguments += ["-useRecordingMIDI"]
         app.launch()
