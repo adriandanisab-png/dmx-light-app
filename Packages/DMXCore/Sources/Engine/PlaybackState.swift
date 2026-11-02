@@ -24,10 +24,17 @@ public struct EngineInput: Sendable {
     /// 0…1
     public var grandMaster: Double
     public var blackout: Bool
+    public var effects: [UUID: Effect]
+    /// Activation order, oldest first.
+    public var runningEffects: [RunningEffect]
+    /// 20…300
+    public var bpm: Double
 
     public init(patch: Patch = Patch(), snapshots: [UUID: Snapshot] = [:], playbacks: [PlaybackState] = [],
-                programmer: Programmer = Programmer(), grandMaster: Double = 1, blackout: Bool = false) {
+                programmer: Programmer = Programmer(), grandMaster: Double = 1, blackout: Bool = false,
+                effects: [UUID: Effect] = [:], runningEffects: [RunningEffect] = [], bpm: Double = 120) {
         self.patch = patch; self.snapshots = snapshots; self.playbacks = playbacks
         self.programmer = programmer; self.grandMaster = grandMaster; self.blackout = blackout
+        self.effects = effects; self.runningEffects = runningEffects; self.bpm = bpm
     }
 }

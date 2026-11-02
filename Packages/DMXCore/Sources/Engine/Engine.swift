@@ -2,7 +2,7 @@ import Foundation
 import ShowModel
 import DMXOutput
 
-/// Pure frame renderer: defaults → playbacks (HTP intensity / LTP rest) → programmer → grand master → blackout.
+/// Pure frame renderer: defaults → playbacks (HTP intensity / LTP rest) → effects → programmer → grand master → blackout.
 public enum Engine {
     public static func render(_ input: EngineInput, at time: TimeInterval) -> DMXFrame {
         let patch = input.patch
@@ -55,6 +55,8 @@ public enum Engine {
                 }
             }
         }
+
+        applyEffects(input, at: time, to: &frame, types: typeByID, fixtures: fixtureByID)
 
         for (fixtureID, values) in input.programmer.values {
             for (ch, v) in values {
