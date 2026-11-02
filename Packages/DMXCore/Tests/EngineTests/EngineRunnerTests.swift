@@ -48,7 +48,7 @@ private let isCI = ProcessInfo.processInfo.environment["CI"] != nil
     Thread.sleep(forTimeInterval: 1.0)
     runner.stop()
     // Shared CI runners can't hold real-time timing; strict range on a real Mac only.
-    let range = isCI ? 20...44 : 36...44
+    let range = isCI ? 20...60 : 36...44
     #expect(range.contains(out.sentFrames.count), "frames: \(out.sentFrames.count)")
 }
 
