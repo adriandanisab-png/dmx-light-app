@@ -41,7 +41,7 @@ final class PlaybackUITests: DMXUITestCase {
         let fader = element("snapshotFader.Red wash")
         XCTAssertTrue(fader.waitForExistence(timeout: 5))
         XCTAssertEqual(level(of: fader), 0, accuracy: 0.001)
-        fader.adjust(toNormalizedSliderPosition: 0.6)
+        pull(fader, to: 0.6)
         XCTAssertTrue(waitForLevel(of: fader) { $0 > 0.3 }, "snapshot fader moved to \(level(of: fader))")
         let status = element("outputStatus")
         let lit = NSPredicate(format: "value != %@", "frameSum=0")
@@ -55,8 +55,13 @@ final class PlaybackUITests: DMXUITestCase {
             .matching(NSPredicate(format: "identifier BEGINSWITH 'fixtureFader.'")).firstMatch
         XCTAssertTrue(first.waitForExistence(timeout: 5))
         XCTAssertEqual(level(of: first), 0, accuracy: 0.001)
-        first.adjust(toNormalizedSliderPosition: 0.8)
+        pull(first, to: 0.8)
         XCTAssertTrue(waitForLevel(of: first) { $0 > 0.5 }, "fixture fader moved to \(level(of: first))")
+    }
+
+    /// Clicks the vertical fader's track at the given height (0 bottom, 1 top): a plain click, no drag.
+    private func pull(_ fader: XCUIElement, to level: Double) {
+        fader.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 1 - level)).click()
     }
 
     /// A slider's value is a number (0...1) or, for text-valued elements, "NN %".
