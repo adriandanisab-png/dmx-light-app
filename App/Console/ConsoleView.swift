@@ -37,14 +37,14 @@ struct ConsoleView: View {
                 Text("Banks 16\u{2013}30 can't be reached over MIDI")
                     .font(.footnote).foregroundStyle(.secondary).padding(.bottom, Space.xs)
             }
-            .frame(minWidth: 540)
+            .frame(minWidth: 500)
             Form {
                 ConsoleLooksView(map: map, selection: $selection, mode: mode, model: model)
                 MIDISettingsView(map: map, model: model)
                 MIDITestPanel(defaultChannel: map.wrappedValue.midiChannel, model: model)
             }
             .formStyle(.grouped)
-            .frame(minWidth: 300, idealWidth: 340, maxWidth: 440)
+            .frame(minWidth: 280, idealWidth: 320, maxWidth: 440)
         }
         .sheet(item: $editingTarget) { target in
             ConsoleCellEditor(target: target, map: map)

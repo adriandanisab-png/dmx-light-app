@@ -72,7 +72,7 @@ struct ShowRootView: View {
             detail
                 .navigationTitle(page.title)
         }
-        .frame(minWidth: 1100, minHeight: 640)
+        .frame(minWidth: 1000, minHeight: 640)
         .preferredColorScheme(.dark)
         .toolbar {
             ToolbarItem(placement: .status) { StatusLine(model: model) }
