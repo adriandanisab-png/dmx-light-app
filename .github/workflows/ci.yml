@@ -35,13 +35,28 @@ jobs:
         if: always()
         run: |
           mkdir -p build/shots-small
-          for f in $(find build/screenshots -name '*.png'); do
-            n=$(basename "$f" .png)
-            sips -s format jpeg -s formatOptions 82 "$f" --out "build/shots-small/$n.jpg" >/dev/null 2>&1 || true
-          done
+          python3 - <<'PY'
+          import json, os, subprocess
+          d = 'build/screenshots'
+          m = json.load(open(d + '/manifest.json'))
+          pairs = []
+          def walk(x):
+              if isinstance(x, dict):
+                  if 'exportedFileName' in x:
+                      pairs.append((x['exportedFileName'], x.get('suggestedHumanReadableName', x['exportedFileName'])))
+                  for v in x.values(): walk(v)
+              elif isinstance(x, list):
+                  for v in x: walk(v)
+          walk(m)
+          for f, n in pairs:
+              if not f.endswith('.png'): continue
+              n = n.split('_0_')[0]
+              out = 'build/shots-small/' + n + '.jpg'
+              subprocess.run(['sips', '-s', 'format', 'jpeg', '-s', 'formatOptions', '82', d + '/' + f, '--out', out], capture_output=True)
+          PY
           for f in build/shots-small/*.jpg; do
             echo "SHOT-BEGIN $(basename "$f")"
-            base64 < "$f"
+            base64 < "$f" | fold -w 100
             echo "SHOT-END"
           done
         continue-on-error: true
@@ -50,6 +65,7 @@ jobs:
         continue-on-error: true
         with:
           name: screenshots
+          retention-days: 3
           path: build/screenshots
           if-no-files-found: warn
       - name: Build universal release app
@@ -64,6 +80,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: UITests-xcresult
+          retention-days: 3
           path: build/UITests.xcresult
       - uses: actions/upload-artifact@v4
         continue-on-error: true  # artifact storage quota was full on 2026-11-16
