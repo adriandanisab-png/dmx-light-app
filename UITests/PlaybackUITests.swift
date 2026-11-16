@@ -40,10 +40,9 @@ final class PlaybackUITests: DMXUITestCase {
         if snapshotsBank.exists { snapshotsBank.click() }
         let fader = element("snapshotFader.Red wash")
         XCTAssertTrue(fader.waitForExistence(timeout: 5))
-        XCTAssertEqual(text(of: fader), "0 %")
+        XCTAssertEqual(level(of: fader), 0, accuracy: 0.001)
         fader.adjust(toNormalizedSliderPosition: 0.6)
-        let raised = NSPredicate(format: "value != %@", "0 %")
-        XCTAssertEqual(XCTWaiter().wait(for: [XCTNSPredicateExpectation(predicate: raised, object: fader)], timeout: 5), .completed)
+        XCTAssertTrue(waitForLevel(of: fader) { $0 > 0.3 }, "snapshot fader moved to \(level(of: fader))")
         let status = element("outputStatus")
         let lit = NSPredicate(format: "value != %@", "frameSum=0")
         XCTAssertEqual(XCTWaiter().wait(for: [XCTNSPredicateExpectation(predicate: lit, object: status)], timeout: 5), .completed)
@@ -55,9 +54,26 @@ final class PlaybackUITests: DMXUITestCase {
         let first = app.descendants(matching: .any)
             .matching(NSPredicate(format: "identifier BEGINSWITH 'fixtureFader.'")).firstMatch
         XCTAssertTrue(first.waitForExistence(timeout: 5))
-        let before = text(of: first)
+        XCTAssertEqual(level(of: first), 0, accuracy: 0.001)
         first.adjust(toNormalizedSliderPosition: 0.8)
-        let changed = NSPredicate(format: "value != %@", before)
-        XCTAssertEqual(XCTWaiter().wait(for: [XCTNSPredicateExpectation(predicate: changed, object: first)], timeout: 5), .completed)
+        XCTAssertTrue(waitForLevel(of: first) { $0 > 0.5 }, "fixture fader moved to \(level(of: first))")
+    }
+
+    /// A slider's value is a number (0...1) or, for text-valued elements, "NN %".
+    private func level(of el: XCUIElement) -> Double {
+        if let n = el.value as? NSNumber { return n.doubleValue }
+        if let s = el.value as? String {
+            return (Double(s.replacingOccurrences(of: " %", with: "")).map { $0 / 100 }) ?? Double(s) ?? -1
+        }
+        return -1
+    }
+
+    private func waitForLevel(of el: XCUIElement, timeout: TimeInterval = 5, _ ok: (Double) -> Bool) -> Bool {
+        let end = Date().addingTimeInterval(timeout)
+        while Date() < end {
+            if ok(level(of: el)) { return true }
+            Thread.sleep(forTimeInterval: 0.2)
+        }
+        return ok(level(of: el))
     }
 }

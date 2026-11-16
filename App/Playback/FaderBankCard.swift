@@ -77,7 +77,7 @@ struct FaderBankCard: View {
 }
 
 /// One console fader strip: coloured cap that lights above 0, % readout, track, name.
-/// Dragging moves it; VoiceOver and UI tests adjust it by 10 % through a slider representation.
+/// Dragging moves it; the slider on top makes it adjustable for VoiceOver and UI tests.
 struct ConsoleFader: View {
     let name: String
     let color: Color
@@ -101,37 +101,33 @@ struct ConsoleFader: View {
                 .frame(width: 56, height: 28, alignment: .top)
         }
         .frame(width: 60)
-        .accessibilityRepresentation {
-            Slider(value: $level, in: 0...1, step: 0.1)
+    }
+
+    /// The visuals are drawn here; a real (rotated, near-invisible) `Slider` on top takes the drag and is
+    /// the accessibility element, so VoiceOver and XCUITest can adjust it (a drawn drag gesture is not reachable).
+    private var track: some View {
+        let knob: CGFloat = 16
+        let travel = Self.trackHeight - knob
+        return ZStack(alignment: .bottom) {
+            RoundedRectangle(cornerRadius: 4).fill(Color.black.opacity(0.35))
+                .frame(width: 8, height: Self.trackHeight)
+            RoundedRectangle(cornerRadius: 4).fill(color.opacity(0.85))
+                .frame(width: 8, height: knob / 2 + travel * level)
+            RoundedRectangle(cornerRadius: 4)
+                .fill(LinearGradient(colors: [Color(white: 0.85), Color(white: 0.55)], startPoint: .top, endPoint: .bottom))
+                .overlay(Rectangle().fill(color).frame(height: 2))
+                .frame(width: 40, height: knob)
+                .shadow(color: .black.opacity(0.5), radius: 2, y: 1)
+                .offset(y: -travel * level)
+            Slider(value: $level, in: 0...1, step: 0.01)
+                .labelsHidden()
+                .frame(width: Self.trackHeight, height: 56)
+                .rotationEffect(.degrees(-90))
+                .frame(width: 56, height: Self.trackHeight)
+                .opacity(0.02)
                 .accessibilityLabel(name)
                 .accessibilityValue("\(percent) %")
                 .accessibilityIdentifier(identifier)
-        }
-    }
-
-    private var track: some View {
-        GeometryReader { geo in
-            let knob: CGFloat = 16
-            let travel = geo.size.height - knob
-            ZStack(alignment: .bottom) {
-                RoundedRectangle(cornerRadius: 4).fill(Color.black.opacity(0.35))
-                    .frame(width: 8)
-                    .frame(maxHeight: .infinity)
-                RoundedRectangle(cornerRadius: 4).fill(color.opacity(0.85))
-                    .frame(width: 8, height: knob / 2 + travel * level)
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(LinearGradient(colors: [Color(white: 0.85), Color(white: 0.55)], startPoint: .top, endPoint: .bottom))
-                    .overlay(Rectangle().fill(color).frame(height: 2))
-                    .frame(width: 40, height: knob)
-                    .shadow(color: .black.opacity(0.5), radius: 2, y: 1)
-                    .offset(y: -travel * level)
-            }
-            .frame(maxWidth: .infinity)
-            .contentShape(Rectangle())
-            .gesture(DragGesture(minimumDistance: 0).onChanged { g in
-                let fraction = 1 - (g.location.y - knob / 2) / travel
-                level = min(max(fraction, 0), 1)
-            })
         }
         .frame(width: 56, height: Self.trackHeight)
     }
