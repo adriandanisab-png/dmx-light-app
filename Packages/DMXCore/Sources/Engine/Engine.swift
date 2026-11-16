@@ -2,7 +2,7 @@ import Foundation
 import ShowModel
 import DMXOutput
 
-/// Pure frame renderer: defaults → playbacks (HTP intensity / LTP rest) → effects → programmer → grand master → blackout.
+/// Pure frame renderer: defaults → playbacks (HTP intensity / LTP rest, scaled by level) → fixture faders (HTP) → effects → programmer → grand master → blackout.
 public enum Engine {
     public static func render(_ input: EngineInput, at time: TimeInterval) -> DMXFrame {
         let patch = input.patch
@@ -23,9 +23,10 @@ public enum Engine {
 
         // Channels no active snapshot records fade from the oldest playback's start frame back to
         // their defaults, so replacing look A with look B fades A's lights out instead of cutting them.
-        if let first = input.playbacks.first {
+        let playbacks = input.playbacks.filter { $0.level > 0 }
+        if let first = playbacks.first {
             var recorded = Set<Int>()
-            for pb in input.playbacks {
+            for pb in playbacks {
                 for (fixtureID, values) in input.snapshots[pb.snapshotID]?.values ?? [:] {
                     for ch in values.keys { if let (addr, _) = address(fixtureID, ch) { recorded.insert(addr) } }
                 }
@@ -37,14 +38,18 @@ public enum Engine {
             }
         }
 
-        for pb in input.playbacks {
+        for pb in playbacks {
             guard let snap = input.snapshots[pb.snapshotID] else { continue }
             let p = progress(pb)
+            let level = min(pb.level, 1)
+            let typeHasIntensity: (FixtureType) -> Bool = { t in t.channels.contains { $0.function == .intensity } }
             for (fixtureID, values) in snap.values {
                 for (ch, target) in values {
                     guard let (addr, type) = address(fixtureID, ch) else { continue }
                     let from = Double(pb.fadeFrom[addr])
-                    let v = UInt8(max(0, min(255, (from + (Double(target) - from) * p).rounded())))
+                    let scaled = Engine.isIntensity(type.channels[ch].function, typeHasIntensity: typeHasIntensity(type))
+                        ? Double(target) * level : Double(target)
+                    let v = UInt8(max(0, min(255, (from + (scaled - from) * p).rounded())))
                     // HTP only for true intensity channels; colour channels of dimmer-less types stay LTP
                     // (merging RGB channel-wise by HTP would mix colours). GM still scales them below.
                     if type.channels[ch].function == .intensity {
@@ -56,6 +61,7 @@ public enum Engine {
             }
         }
 
+        applyFixtureLevels(input.fixtureLevels, to: &frame, types: typeByID, fixtures: fixtureByID)
         applyEffects(input, at: time, to: &frame, types: typeByID, fixtures: fixtureByID)
 
         for (fixtureID, values) in input.programmer.values {

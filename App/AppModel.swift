@@ -41,6 +41,10 @@ final class AppModel: ObservableObject {
     @Published var showAdapterLost = false
     @Published private(set) var programmer = Programmer()
     @Published private(set) var activeSnapshots: [UUID] = []
+    /// Snapshot fader positions of the active snapshots (a missing entry means 1).
+    @Published private(set) var snapshotLevels: [UUID: Double] = [:]
+    /// Fixture faders (HTP live layer). Fixtures at 0 are not stored.
+    @Published private(set) var fixtureLevels: [UUID: Double] = [:]
     @Published var grandMaster: Double = 1 {
         didSet { let v = grandMaster; runner.update { $0.grandMaster = v } }
     }
@@ -128,9 +132,14 @@ final class AppModel: ObservableObject {
             programmer.selection.removeAll { !known.contains($0) }
             pushProgrammer()
         }
+        if fixtureLevels.keys.contains(where: { !known.contains($0) }) {
+            fixtureLevels = fixtureLevels.filter { known.contains($0.key) }
+            pushFixtureLevels()
+        }
         let stillActive = activeSnapshots.filter { s[$0] != nil }
         if stillActive != activeSnapshots {
             activeSnapshots = stillActive
+            snapshotLevels = snapshotLevels.filter { s[$0.key] != nil }
             runner.update { input in input.playbacks.removeAll { s[$0.snapshotID] == nil } }
         }
         effects = Dictionary(show.effects.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
@@ -199,20 +208,61 @@ final class AppModel: ObservableObject {
         var input = runner.currentInput()
         let now = runner.now()
         input.grandMaster = 1; input.blackout = false; input.programmer = Programmer(); input.runningEffects = []
+        input.fixtureLevels = [:]
         let from = Engine.render(input, at: now)
         let pb = PlaybackState(snapshotID: snapshotID, startedAt: now,
                                fade: max(fade ?? snap.defaultFade, 0), fadeFrom: from)
         if layered {
             activeSnapshots.append(snapshotID)
+            snapshotLevels[snapshotID] = 1
             runner.update { $0.playbacks.append(pb) }
         } else {
             activeSnapshots = [snapshotID]
+            snapshotLevels = [snapshotID: 1]
             runner.update { $0.playbacks = [pb] }
         }
     }
 
+    /// Fader position of a snapshot: 0 when it is not active.
+    func snapshotLevel(_ id: UUID) -> Double {
+        activeSnapshots.contains(id) ? snapshotLevels[id] ?? 1 : 0
+    }
+
+    /// Snapshot fader. Raising from 0 activates the snapshot layered, without a fade; 0 releases it.
+    func setSnapshotLevel(_ id: UUID, _ level: Double) {
+        let l = min(max(level, 0), 1)
+        if l <= 0 { release(id); return }
+        if !activeSnapshots.contains(id) {
+            guard snapshots[id] != nil else { return }
+            recall(id, layered: true, fade: 0)
+        }
+        snapshotLevels[id] = l
+        runner.update { input in
+            if let i = input.playbacks.firstIndex(where: { $0.snapshotID == id }) { input.playbacks[i].level = l }
+        }
+    }
+
+    // MARK: Fixture faders
+
+    private func pushFixtureLevels() {
+        let levels = fixtureLevels
+        runner.update { $0.fixtureLevels = levels }
+    }
+
+    func setFixtureLevel(_ id: UUID, _ level: Double) {
+        let l = min(max(level, 0), 1)
+        if l <= 0 { fixtureLevels[id] = nil } else { fixtureLevels[id] = l }
+        pushFixtureLevels()
+    }
+
+    func clearFixtureFaders() {
+        fixtureLevels = [:]
+        pushFixtureLevels()
+    }
+
     func release(_ snapshotID: UUID) {
         activeSnapshots.removeAll { $0 == snapshotID }
+        snapshotLevels[snapshotID] = nil
         runner.update { input in input.playbacks.removeAll { $0.snapshotID == snapshotID } }
     }
 
@@ -272,6 +322,14 @@ final class AppModel: ObservableObject {
         guard let i = runningEffects.firstIndex(where: { $0.effectID == id }) else { return }
         runningEffects[i].level = min(max(level, 0), 1)
         pushEffects()
+    }
+
+    /// Effect fader: raising a stopped saved effect starts it at that level; 0 stops it.
+    func setEffectFader(_ id: UUID, _ level: Double) {
+        let l = min(max(level, 0), 1)
+        if l <= 0 { stopEffect(id); return }
+        if isRunning(id) { setEffectLevel(id, l) }
+        else if let e = effects[id] { startEffect(e, level: l) }
     }
 
     /// The effect editor shows its draft live on the stage; nil ends the preview.
@@ -360,9 +418,11 @@ final class AppModel: ObservableObject {
         var input = runner.currentInput()
         let now = runner.now()
         input.grandMaster = 1; input.blackout = false; input.programmer = Programmer(); input.runningEffects = []
+        input.fixtureLevels = [:]
         let from = Engine.render(input, at: now)
         let pbs = ids.map { PlaybackState(snapshotID: $0, startedAt: now, fade: max(cue.fade, 0), fadeFrom: from) }
         activeSnapshots = ids
+        snapshotLevels = Dictionary(ids.map { ($0, 1.0) }, uniquingKeysWith: { a, _ in a })
         runner.update { $0.playbacks = pbs }
         let old = runningEffects
         runningEffects = part.effectIDs.filter { effects[$0] != nil }.map { id in

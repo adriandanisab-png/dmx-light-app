@@ -144,3 +144,91 @@ private func snap(_ values: [UUID: FixtureValues]) -> Snapshot { Snapshot(name: 
     #expect(Engine.render(input, at: 12)[1] == 0)
     #expect(Engine.render(input, at: 11)[4] == 128)
 }
+
+// MARK: Playback level and fixture faders
+
+@Test func snapshotLevelScalesIntensity() {
+    let r = Rig()
+    let s = snap([r.head.id: [0: 200, 1: 200]])
+    let f = Engine.render(r.input([s], playbacks: [PlaybackState(snapshotID: s.id, startedAt: 0, fade: 0, fadeFrom: DMXFrame(), level: 0.5)]), at: 1)
+    #expect(f[7] == 100)
+    #expect(f[8] == 200)   // colour on a dimmer fixture stays at full value
+}
+
+@Test func snapshotLevelScalesDimmerlessColour() {
+    let r = Rig()
+    let s = snap([r.par1.id: [0: 200, 1: 100]])
+    let f = Engine.render(r.input([s], playbacks: [PlaybackState(snapshotID: s.id, startedAt: 0, fade: 0, fadeFrom: DMXFrame(), level: 0.5)]), at: 1)
+    #expect(f[1] == 100)
+    #expect(f[2] == 50)
+}
+
+@Test func levelZeroContributesNothing() {
+    let r = Rig()
+    let s = snap([r.par1.id: [0: 200], r.head.id: [1: 99]])
+    let zero = PlaybackState(snapshotID: s.id, startedAt: 0, fade: 0, fadeFrom: DMXFrame(), level: 0)
+    #expect(Engine.render(r.input([s], playbacks: [zero]), at: 1) == PatchWriter.defaults(for: r.patch))
+    // Its channels are not "recorded": a released look still fades out under the active one.
+    let a = snap([r.par2.id: [0: 255]])
+    var from = DMXFrame(); from[1] = 255
+    let pb = r.playback(a, start: 10, fade: 2, from: from)
+    let f = Engine.render(r.input([s, a], playbacks: [zero, pb]), at: 11)
+    #expect(f[1] == 128)
+}
+
+@Test func htpBetweenTwoLevels() {
+    let r = Rig()
+    let a = snap([r.head.id: [0: 200]]), b = snap([r.head.id: [0: 255]])
+    func pb(_ s: Snapshot, _ l: Double) -> PlaybackState {
+        PlaybackState(snapshotID: s.id, startedAt: 0, fade: 0, fadeFrom: DMXFrame(), level: l)
+    }
+    #expect(Engine.render(r.input([a, b], playbacks: [pb(a, 1), pb(b, 0.5)]), at: 1)[7] == 200)
+    #expect(Engine.render(r.input([a, b], playbacks: [pb(a, 0.5), pb(b, 0.5)]), at: 1)[7] == 128)
+}
+
+private func fixtureInput(_ r: Rig, _ levels: [UUID: Double], _ snaps: [Snapshot] = [], _ pbs: [PlaybackState] = []) -> EngineInput {
+    var i = r.input(snaps, playbacks: pbs)
+    i.fixtureLevels = levels
+    return i
+}
+
+@Test func fixtureFaderRaisesDimmer() {
+    let r = Rig()
+    let f = Engine.render(fixtureInput(r, [r.head.id: 0.5]), at: 1)
+    #expect(f[7] == 128)
+    #expect(f[8] == PatchWriter.defaults(for: r.patch)[8])
+}
+
+@Test func fixtureFaderLightsDarkRGBWhite() {
+    let r = Rig()
+    let f = Engine.render(fixtureInput(r, [r.par1.id: 0.5]), at: 1)
+    #expect(f[1] == 128 && f[2] == 128 && f[3] == 128)
+    #expect(f[4] == 0)
+}
+
+@Test func fixtureFaderKeepsHue() {
+    let r = Rig()
+    let s = snap([r.par1.id: [0: 100, 1: 50]])
+    let f = Engine.render(fixtureInput(r, [r.par1.id: 1], [s], [r.playback(s)]), at: 1)
+    #expect(f[1] == 255)
+    #expect(f[2] == 128)
+    #expect(f[3] == 0)
+    // A level below the current brightness changes nothing.
+    let g = Engine.render(fixtureInput(r, [r.par1.id: 0.2], [s], [r.playback(s)]), at: 1)
+    #expect(g[1] == 100 && g[2] == 50)
+}
+
+@Test func fixtureFaderBelowPlaybackIsHTP() {
+    let r = Rig()
+    let s = snap([r.head.id: [0: 200]])
+    #expect(Engine.render(fixtureInput(r, [r.head.id: 0.5], [s], [r.playback(s)]), at: 1)[7] == 200)
+    #expect(Engine.render(fixtureInput(r, [r.head.id: 1], [s], [r.playback(s)]), at: 1)[7] == 255)
+}
+
+@Test func blackoutBeatsFixtureFader() {
+    let r = Rig()
+    var i = fixtureInput(r, [r.head.id: 1, r.par1.id: 1])
+    i.blackout = true
+    let f = Engine.render(i, at: 1)
+    #expect(f[7] == 0 && f[1] == 0)
+}

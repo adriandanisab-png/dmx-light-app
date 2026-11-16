@@ -1,7 +1,7 @@
 import SwiftUI
 import ShowModel
 
-/// The Playback page: grand master and blackout, cue panel, running effects, snapshot tiles and effects.
+/// The Playback page: grand master and blackout, cue panel, running effects, fader banks, snapshot tiles and effects.
 struct PlaybackView: View {
     @Binding var document: ShowDocument
     @ObservedObject var model: AppModel
@@ -43,6 +43,7 @@ struct PlaybackView: View {
             RunningEffectsBar(document: $document, model: model)
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.md) {
+                    FaderBankCard(show: document.show, model: model)
                     snapshotsCard
                     if model.outputMode == .consoleMIDI { consoleLooks }
                     EffectsSection(document: $document, model: model)

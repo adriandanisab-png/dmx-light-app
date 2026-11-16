@@ -26,6 +26,9 @@ final class ScreenshotUITests: DMXUITestCase {
         chase.click()
         let red = element("playbackButton.Red wash")
         if red.waitForExistence(timeout: 5) { red.click() }
+        // Pull the snapshot fader up so the Faders card shows a lit strip.
+        let fader = element("snapshotFader.Red wash")
+        if fader.waitForExistence(timeout: 5) { fader.adjust(toNormalizedSliderPosition: 0.7) }
 
         capture("1-Playback", tab: "Playback")
         // Re-select a fixture and set a colour so the Programmer page is populated.
