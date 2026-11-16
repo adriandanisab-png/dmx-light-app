@@ -9,18 +9,19 @@ struct StageEditorToolbar: View {
 
     var body: some View {
         HStack {
-            Text("Stage").font(.headline)
+            Label("Stage", systemImage: "theatermasks").font(.headline)
             Spacer()
-            Button("Set background\u{2026}") { chooseBackground() }
+            Button { chooseBackground() } label: { Label("Set background\u{2026}", systemImage: "photo") }
                 .accessibilityIdentifier("setBackground")
             if document.show.stage.backgroundFileName != nil {
-                Button("Remove background") {
+                Button {
                     document.backgroundImageData = nil
                     document.show.stage.backgroundFileName = nil
-                }
+                } label: { Label("Remove background", systemImage: "trash") }
             }
         }
-        .padding(8)
+        .controlSize(.small)
+        .padding(Space.sm)
     }
 
     private func chooseBackground() {

@@ -26,10 +26,10 @@ struct RawChannelFaders: View {
                         .frame(width: 54)
                     }
                 }
-                .padding(8)
+                .padding(.vertical, Space.xs)
             }
         } else {
-            Text("Select fixtures to see their channels.").foregroundStyle(.secondary)
+            Label("Select fixtures to see their channels.", systemImage: "hand.point.up.left").foregroundStyle(.secondary)
         }
     }
 }

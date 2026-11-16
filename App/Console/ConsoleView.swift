@@ -7,7 +7,7 @@ enum ConsoleMode: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 }
 
-/// The "Console" tab: grid, looks, MIDI settings and test panel.
+/// The Console page: grid, looks, MIDI settings and test panel.
 struct ConsoleView: View {
     @Binding var document: ShowDocument
     @ObservedObject var model: AppModel
@@ -20,31 +20,30 @@ struct ConsoleView: View {
 
     var body: some View {
         HSplitView {
-            VStack(spacing: 8) {
+            VStack(spacing: Space.xs) {
                 ConsolePlaybackView(mode: $mode, showReset: $showReset, model: model)
                 if !model.isArmed {
-                    Text("Output is not armed: nothing is sent to the console. Press ARM in the toolbar.")
-                        .font(.callout).foregroundStyle(.orange)
+                    NoticeBanner(text: "Output is not armed: nothing is sent to the console. Press ARM in the toolbar.")
+                        .padding(.horizontal, Space.sm)
+                        .accessibilityElement(children: .combine)
                         .accessibilityIdentifier("armHint")
                 }
                 ScrollView {
-                    ConsoleGrid(map: map.wrappedValue, mode: mode, selection: $selection, editingTarget: $editingTarget, model: model)
-                        .padding(8)
+                    Card(padding: Space.sm) {
+                        ConsoleGrid(map: map.wrappedValue, mode: mode, selection: $selection, editingTarget: $editingTarget, model: model)
+                    }
+                    .padding(Space.sm)
                 }
                 Text("Banks 16\u{2013}30 can't be reached over MIDI")
-                    .font(.footnote).foregroundStyle(.secondary).padding(.bottom, 6)
+                    .font(.footnote).foregroundStyle(.secondary).padding(.bottom, Space.xs)
             }
             .frame(minWidth: 620)
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    ConsoleLooksView(map: map, selection: $selection, mode: mode, model: model)
-                    Divider()
-                    MIDISettingsView(map: map, model: model)
-                    Divider()
-                    MIDITestPanel(defaultChannel: map.wrappedValue.midiChannel, model: model)
-                }
-                .padding(12)
+            Form {
+                ConsoleLooksView(map: map, selection: $selection, mode: mode, model: model)
+                MIDISettingsView(map: map, model: model)
+                MIDITestPanel(defaultChannel: map.wrappedValue.midiChannel, model: model)
             }
+            .formStyle(.grouped)
             .frame(minWidth: 320, idealWidth: 360, maxWidth: 460)
         }
         .sheet(item: $editingTarget) { target in

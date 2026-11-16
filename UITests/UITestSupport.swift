@@ -26,9 +26,15 @@ class DMXUITestCase: XCTestCase {
         app.descendants(matching: .any).matching(identifier: id).firstMatch
     }
 
+    /// Sidebar rows carry `sidebar.<OldTabName>` (Config, Stage, Programmer, Playback, Library, Devices, Console).
     func openTab(_ name: String) {
+        let row = element("sidebar.\(name)")
+        if row.waitForExistence(timeout: 10) {
+            row.click()
+            return
+        }
         let tab = app.radioButtons[name].exists ? app.radioButtons[name].firstMatch : app.tabs[name].firstMatch
-        XCTAssertTrue(tab.waitForExistence(timeout: 10), "tab \(name)")
+        XCTAssertTrue(tab.waitForExistence(timeout: 5), "tab \(name)")
         tab.click()
     }
 

@@ -42,10 +42,12 @@ struct ConsoleGrid: View {
                 .font(.caption).lineLimit(2).multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity, minHeight: 34)
                 .padding(2)
-                .background(RoundedRectangle(cornerRadius: 6).fill(base.opacity(isOn ? 1 : 0.28)))
-                .overlay(RoundedRectangle(cornerRadius: 6)
-                    .stroke(isSelected ? Color.white : (isOn ? Color.yellow : Color.clear), lineWidth: 2))
-                .foregroundStyle(isOn ? Color.black : Color.primary)
+                .background(RoundedRectangle(cornerRadius: 8).fill(base.opacity(isOn ? 1 : 0.22)))
+                .overlay(RoundedRectangle(cornerRadius: 8)
+                    .stroke(isSelected ? Color.accentColor : (isOn ? Color.white : Color.white.opacity(0.08)),
+                            lineWidth: isSelected || isOn ? 2 : 1))
+                .shadow(color: isOn ? base.opacity(0.6) : .clear, radius: 6)
+                .foregroundStyle(isOn ? base.readableForeground : Color.primary)
         }
         .buttonStyle(.plain)
         .frame(minWidth: 64)

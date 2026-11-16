@@ -18,21 +18,28 @@ struct EffectsSection: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("Effects").font(.title3.bold())
-                Text("on \(targetText)").font(.caption).foregroundStyle(.secondary)
-                    .accessibilityIdentifier("effectsTarget")
+        VStack(alignment: .leading, spacing: Space.md) {
+            Card {
+                VStack(alignment: .leading, spacing: Space.sm) {
+                    SectionHeader("Effects", systemImage: "wand.and.stars") {
+                        Text("on \(targetText)").font(.caption).foregroundStyle(.secondary)
+                            .accessibilityIdentifier("effectsTarget")
+                    }
+                    EffectFixturePicker(patch: patch, model: model)
+                }
             }
-            EffectFixturePicker(patch: patch, model: model)
-            group("Chases", .chase)
-            group("Overlays", .overlay)
+            group("Chases", "arrow.triangle.2.circlepath", .chase)
+            group("Overlays", "square.2.layers.3d", .overlay)
             if !document.show.effects.isEmpty {
-                Text("Saved effects").font(.headline)
-                EffectGrid(items: document.show.effects) { e in
-                    EffectButton(title: e.name, subtitle: "\(e.fixtureIDs.count) fx", colorHex: e.colorHex,
-                                 isOn: model.isRunning(e.id), identifier: "effectButton.\(e.name)") {
-                        model.toggleEffect(e)
+                Card {
+                    VStack(alignment: .leading, spacing: Space.sm) {
+                        SectionHeader("Saved", systemImage: "tray.full")
+                        EffectGrid(items: document.show.effects) { e in
+                            EffectButton(title: e.name, subtitle: "\(e.fixtureIDs.count) fx", colorHex: e.colorHex,
+                                         isOn: model.isRunning(e.id), identifier: "effectButton.\(e.name)") {
+                                model.toggleEffect(e)
+                            }
+                        }
                     }
                 }
             }
@@ -42,13 +49,15 @@ struct EffectsSection: View {
         .accessibilityIdentifier("effectsSection")
     }
 
-    private func group(_ title: String, _ category: EffectPresetCategory) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title).font(.headline)
-            EffectGrid(items: EffectPresets.all.filter { $0.category == category }) { preset in
-                EffectButton(title: preset.name, subtitle: nil, colorHex: preset.colorHex,
-                             isOn: existing(preset).map { model.isRunning($0.id) } ?? false,
-                             identifier: "effectPreset.\(preset.name)") { fire(preset) }
+    private func group(_ title: String, _ icon: String, _ category: EffectPresetCategory) -> some View {
+        Card {
+            VStack(alignment: .leading, spacing: Space.sm) {
+                SectionHeader(title, systemImage: icon)
+                EffectGrid(items: EffectPresets.all.filter { $0.category == category }) { preset in
+                    EffectButton(title: preset.name, subtitle: nil, colorHex: preset.colorHex,
+                                 isOn: existing(preset).map { model.isRunning($0.id) } ?? false,
+                                 identifier: "effectPreset.\(preset.name)") { fire(preset) }
+                }
             }
         }
     }
@@ -74,24 +83,23 @@ struct RunningEffectsBar: View {
     @ObservedObject var model: AppModel
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text("Running effects").font(.headline)
-                if model.runningEffects.isEmpty { Text("none").font(.caption).foregroundStyle(.secondary) }
-                Spacer()
-                TapTempoButton(model: model)
-            }
-            ForEach(model.runningEffects, id: \.effectID) { r in
-                if let e = document.show.effects.first(where: { $0.id == r.effectID }) {
-                    RunningEffectRow(effect: e, model: model) {
-                        let ids = model.effectTargets.isEmpty ? document.show.patch.fixtures.map(\.id) : model.effectTargets
-                        let updated = model.retarget(e, to: ids)
-                        if let i = document.show.effects.firstIndex(where: { $0.id == e.id }) { document.show.effects[i] = updated }
+        Card {
+            VStack(alignment: .leading, spacing: Space.xs) {
+                SectionHeader("Running effects", systemImage: "waveform") {
+                    if model.runningEffects.isEmpty { Text("none").font(.caption).foregroundStyle(.secondary) }
+                    TapTempoButton(model: model)
+                }
+                ForEach(model.runningEffects, id: \.effectID) { r in
+                    if let e = document.show.effects.first(where: { $0.id == r.effectID }) {
+                        RunningEffectRow(effect: e, model: model) {
+                            let ids = model.effectTargets.isEmpty ? document.show.patch.fixtures.map(\.id) : model.effectTargets
+                            let updated = model.retarget(e, to: ids)
+                            if let i = document.show.effects.firstIndex(where: { $0.id == e.id }) { document.show.effects[i] = updated }
+                        }
                     }
                 }
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
@@ -106,17 +114,9 @@ struct EffectButton: View {
 
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 2) {
-                Text(title).font(.headline).lineLimit(2).multilineTextAlignment(.center)
-                if let subtitle { Text(subtitle).font(.caption).opacity(0.8) }
-            }
-            .frame(maxWidth: .infinity, minHeight: 44)
-            .padding(4)
-            .background(RoundedRectangle(cornerRadius: 8).fill(Color(hex: colorHex).opacity(isOn ? 1 : 0.28)))
-            .overlay(RoundedRectangle(cornerRadius: 8).stroke(isOn ? Color.yellow : Color.clear, lineWidth: 2))
-            .foregroundStyle(isOn ? Color.black : Color.primary)
+            TileLabel(title: title, caption: subtitle)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(TileButtonStyle(color: Color(hex: colorHex), isOn: isOn, minHeight: 44))
         .accessibilityLabel(title)
         .accessibilityIdentifier(identifier)
         .accessibilityValue(isOn ? "on" : "off")
@@ -138,6 +138,7 @@ struct RunningEffectRow: View {
                 .accessibilityIdentifier("effectFixtureCount.\(effect.name)")
             Button(action: usePicked) { Image(systemName: "scope") }
                 .help("Run on the picked fixtures")
+                .buttonStyle(.borderless)
                 .accessibilityLabel("Use picked fixtures for \(effect.name)")
                 .accessibilityIdentifier("effectRetarget.\(effect.name)")
             Slider(value: Binding(get: { model.effectLevel(effect.id) }, set: { model.setEffectLevel(effect.id, $0) }),
@@ -147,6 +148,7 @@ struct RunningEffectRow: View {
             Text("\(Int((model.effectLevel(effect.id) * 100).rounded())) %").monospacedDigit()
                 .frame(width: 48, alignment: .trailing)
             Button { model.stopEffect(effect.id) } label: { Image(systemName: "stop.fill") }
+                .buttonStyle(.borderless).help("Stop")
                 .accessibilityLabel("Stop \(effect.name)")
                 .accessibilityIdentifier("effectStop.\(effect.name)")
         }
@@ -183,7 +185,7 @@ struct EffectFixturePicker: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
-                Text("Fixtures").font(.headline)
+                Text("Fixtures").font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
                 Button("All") { model.effectTargets = [] }.accessibilityIdentifier("effectPickAll")
                 Button("Odd") { pickEvery(from: 0) }
                 Button("Even") { pickEvery(from: 1) }
@@ -196,6 +198,7 @@ struct EffectFixturePicker: View {
                 }
                 .fixedSize()
             }
+            .controlSize(.small)
             FlowChips(items: patch.fixtures) { f in
                 let order = model.effectTargets.firstIndex(of: f.id)
                 Button { toggle(f.id) } label: {
@@ -203,8 +206,8 @@ struct EffectFixturePicker: View {
                         if let order { Text("\(order + 1)").font(.caption2.bold()).monospacedDigit() }
                         Text(f.name).lineLimit(1)
                     }
-                    .padding(.horizontal, 8).padding(.vertical, 4)
-                    .background(Capsule().fill(order != nil ? Color.accentColor : Color.gray.opacity(0.25)))
+                    .padding(.horizontal, 10).padding(.vertical, 4)
+                    .background(Capsule().fill(order != nil ? Color.accentColor : Color.white.opacity(0.1)))
                     .foregroundStyle(order != nil ? Color.white : Color.primary)
                 }
                 .buttonStyle(.plain)

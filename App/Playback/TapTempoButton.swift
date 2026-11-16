@@ -11,9 +11,10 @@ struct TapTempoButton: View {
     var body: some View {
         HStack(spacing: 8) {
             Button { model.tapTempoTap() } label: {
-                Text("TAP").font(.headline).frame(minWidth: 60, minHeight: 32)
+                Label("TAP", systemImage: "metronome").font(.headline).frame(minWidth: 70, minHeight: 24)
             }
             .buttonStyle(.borderedProminent)
+            .controlSize(.large)
             .keyboardShortcut("t", modifiers: [])
             .help("Tap tempo (T)")
             .accessibilityIdentifier("tapTempoButton")
@@ -36,7 +37,7 @@ struct TapTempoButton: View {
                 .accessibilityIdentifier("bpmField")
                 .accessibilityValue(String(Int(model.bpm.rounded())))
             }
-            Text("BPM").foregroundStyle(.secondary)
+            Text("BPM").font(.caption).foregroundStyle(.secondary)
         }
     }
 

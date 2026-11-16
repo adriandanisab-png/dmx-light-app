@@ -16,32 +16,42 @@ struct MIDISettingsView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("MIDI settings").font(.headline)
-            HStack {
-                if model.destinations.isEmpty {
-                    Text("No MIDI interface found").foregroundStyle(.secondary)
-                } else {
+        Section {
+            if model.destinations.isEmpty {
+                LabeledContent("Interface") {
+                    HStack {
+                        Text("No MIDI interface found").foregroundStyle(.secondary)
+                        refreshButton
+                    }
+                }
+            } else {
+                HStack {
                     Picker("Interface", selection: Binding(
                         get: { model.selectedDestinationID },
                         set: { model.selectDestination($0) })) {
                         Text("None").tag(Int32?.none)
                         ForEach(model.destinations, id: \.uniqueID) { Text($0.name).tag(Optional($0.uniqueID)) }
                     }
+                    refreshButton
                 }
-                Button { model.refreshDestinations() } label: { Image(systemName: "arrow.clockwise") }
-                    .help("Refresh interface list")
             }
             Stepper("MIDI channel: \(map.midiChannel)", value: $map.midiChannel, in: 1...16)
             Text("Must match the console: hold MIDI/Rec 3 s, Bank Up/Down, hold MIDI/Rec 3 s")
                 .font(.caption).foregroundStyle(.secondary)
             Toggle("Send Note Off after each Note On", isOn: noteOffEnabled)
             if map.noteOffDelayMs != nil {
-                HStack {
-                    Text("Delay (ms)")
+                LabeledContent("Delay (ms)") {
                     TextField("50", text: delayText).textFieldStyle(.roundedBorder).frame(width: 70)
                 }
             }
+        } header: {
+            SectionHeader("MIDI settings", systemImage: "pianokeys")
         }
+    }
+
+    private var refreshButton: some View {
+        Button { model.refreshDestinations() } label: { Image(systemName: "arrow.clockwise") }
+            .buttonStyle(.borderless)
+            .help("Refresh interface list")
     }
 }

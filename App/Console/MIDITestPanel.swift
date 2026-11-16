@@ -9,8 +9,7 @@ struct MIDITestPanel: View {
     @State private var channel: Int?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("MIDI test panel").font(.headline)
+        Section {
             Stepper("Note: \(note)", value: $note, in: 0...127)
             Stepper("Velocity: \(velocity)", value: $velocity, in: 1...127)
             Stepper("Channel: \(channel ?? defaultChannel)",
@@ -32,7 +31,10 @@ struct MIDITestPanel: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .frame(height: 110)
-            .background(Color.black.opacity(0.3))
+            .padding(Space.xs)
+            .background(Color.black.opacity(0.3), in: RoundedRectangle(cornerRadius: 8))
+        } header: {
+            SectionHeader("MIDI test panel", systemImage: "waveform.path")
         }
     }
 }

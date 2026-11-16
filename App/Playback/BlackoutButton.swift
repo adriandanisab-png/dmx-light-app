@@ -16,10 +16,12 @@ struct BlackoutButton: View {
                 model.blackout.toggle()
             }
         } label: {
-            Text("BLACKOUT").font(.title.bold()).frame(minWidth: 220, minHeight: 56)
+            Label("Blackout", systemImage: isOn ? "moon.fill" : "moon")
+                .font(.title2.bold()).frame(minWidth: 170, minHeight: 36)
         }
         .buttonStyle(.borderedProminent)
-        .tint(isOn ? .red : .gray)
+        .controlSize(.extraLarge)
+        .tint(isOn ? .red : Color.red.opacity(0.45))
         .keyboardShortcut("b", modifiers: [])
         .help("Blackout (B)")
         .accessibilityIdentifier("blackoutButton")

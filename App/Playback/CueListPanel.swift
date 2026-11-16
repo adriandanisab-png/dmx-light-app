@@ -9,44 +9,54 @@ struct CueListPanel: View {
     private var lists: [CueList] { document.show.cueLists }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("Cue list").font(.title3.bold())
-                if !lists.isEmpty {
-                    // A popup in the window would take keyboard focus and swallow the B / T / Space shortcuts.
-                    Menu {
-                        Button("None") { model.selectCueList(nil) }
-                        ForEach(lists) { l in Button(l.name) { model.selectCueList(l.id) } }
-                    } label: {
-                        Text(model.activeCueList?.name ?? "Choose\u{2026}")
+        Card {
+            VStack(alignment: .leading, spacing: Space.sm) {
+                SectionHeader("Cue list", systemImage: "list.number") {
+                    if !lists.isEmpty {
+                        // A popup in the window would take keyboard focus and swallow the B / T / Space shortcuts.
+                        Menu {
+                            Button("None") { model.selectCueList(nil) }
+                            ForEach(lists) { l in Button(l.name) { model.selectCueList(l.id) } }
+                        } label: {
+                            Text(model.activeCueList?.name ?? "Choose\u{2026}")
+                        }
+                        .fixedSize()
+                        .accessibilityIdentifier("cueListPicker")
                     }
-                    .fixedSize()
-                    .accessibilityIdentifier("cueListPicker")
+                    Text(model.cueMode == .direct ? "Mode: Direct" : "Mode: Console")
+                        .font(.caption).foregroundStyle(.secondary)
+                        .accessibilityIdentifier("cueMode")
                 }
-                Spacer()
-                Text(model.cueMode == .direct ? "Mode: Direct" : "Mode: Console")
-                    .font(.callout).foregroundStyle(.secondary)
-                    .accessibilityIdentifier("cueMode")
-            }
-            if lists.isEmpty {
-                Text("No cue lists yet. Build one in the Library tab.").foregroundStyle(.secondary)
-            } else if let list = model.activeCueList {
-                HStack(alignment: .top, spacing: 16) {
-                    cueBox("Current", model.cueCurrent, "cueCurrent")
-                    cueBox("Next", model.cueNext, "cueNext")
-                    Spacer()
-                    Button { model.back() } label: { Text("Back").frame(minWidth: 56, minHeight: 40) }
+                if lists.isEmpty {
+                    HStack {
+                        Text("No cue lists yet. Build one in the Library page.")
+                            .font(.callout).foregroundStyle(.secondary)
+                    }
+                } else if let list = model.activeCueList {
+                    HStack(alignment: .center, spacing: Space.md) {
+                        cueBox("Current", model.cueCurrent, "cueCurrent")
+                        Image(systemName: "chevron.right").foregroundStyle(.tertiary)
+                        cueBox("Next", model.cueNext, "cueNext")
+                        Spacer()
+                        Button { model.back() } label: {
+                            Label("Back", systemImage: "backward.fill").frame(minWidth: 64)
+                        }
+                        .controlSize(.extraLarge)
+                        .help("Previous cue")
                         .accessibilityIdentifier("cueBack")
-                    Button { model.go() } label: { Text("GO").font(.title.bold()).frame(minWidth: 110, minHeight: 40) }
+                        Button { model.go() } label: {
+                            Text("GO").font(.title.bold()).frame(minWidth: 110)
+                        }
                         .buttonStyle(.borderedProminent).tint(.green)
+                        .controlSize(.extraLarge)
                         .keyboardShortcut(.space, modifiers: [])
                         .help("Next cue (Space)")
                         .accessibilityIdentifier("cueGo")
+                    }
+                    ConsoleBackupBanner(list: list, show: document.show)
                 }
-                ConsoleBackupBanner(list: list, show: document.show)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
         .onAppear { autoSelect() }
         .onChange(of: lists.count) { _, _ in autoSelect() }
     }
@@ -58,14 +68,14 @@ struct CueListPanel: View {
 
     private func cueBox(_ title: String, _ cue: Cue?, _ id: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(title).font(.caption).foregroundStyle(.secondary)
+            Text(title.uppercased()).font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
             Text(cue.map { AppModel.numberText($0.number) } ?? "\u{2014}")
-                .font(.system(size: 30, weight: .bold, design: .rounded)).monospacedDigit()
+                .font(.system(size: 34, weight: .bold, design: .rounded)).monospacedDigit()
                 .accessibilityIdentifier("\(id)Number")
             Text(cue?.name ?? "").font(.caption).lineLimit(1)
                 .accessibilityIdentifier("\(id)Name")
         }
-        .frame(minWidth: 90, alignment: .leading)
+        .frame(minWidth: 100, alignment: .leading)
     }
 }
 
@@ -77,11 +87,8 @@ struct ConsoleBackupBanner: View {
     var body: some View {
         let n = list.cuesWithoutConsoleBackup(in: show)
         if n > 0 {
-            Text(n == 1 ? "1 cue has no console backup" : "\(n) cues have no console backup")
-                .font(.callout)
-                .padding(8).frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.orange.opacity(0.85), in: RoundedRectangle(cornerRadius: 6))
-                .foregroundStyle(.black)
+            NoticeBanner(text: n == 1 ? "1 cue has no console backup" : "\(n) cues have no console backup")
+                .accessibilityElement(children: .combine)
                 .accessibilityIdentifier("consoleBackupBanner")
         }
     }

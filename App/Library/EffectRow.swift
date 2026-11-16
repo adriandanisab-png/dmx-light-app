@@ -19,9 +19,10 @@ struct EffectRow: View {
             Spacer()
             Button("Edit", action: onEdit).accessibilityIdentifier("editEffect.\(effect.name)")
             Button(action: onDuplicate) { Image(systemName: "plus.square.on.square") }
+                .buttonStyle(.borderless)
                 .help("Duplicate").accessibilityLabel("Duplicate \(effect.name)")
             Button(action: onDelete) { Image(systemName: "trash") }
-                .buttonStyle(.borderless).accessibilityLabel("Delete \(effect.name)")
+                .buttonStyle(.borderless).help("Delete").accessibilityLabel("Delete \(effect.name)")
         }
     }
 }

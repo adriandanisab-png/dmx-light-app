@@ -7,13 +7,14 @@ struct IntensityControl: View {
     @State private var value = 0.0
 
     var body: some View {
-        HStack {
-            Text("Intensity").frame(width: 70, alignment: .leading)
+        HStack(spacing: Space.sm) {
+            Image(systemName: "sun.min").foregroundStyle(.secondary)
             Slider(value: $value, in: 0...1) { editing in _ = editing }
                 .onChange(of: value) { _, v in
                     model.programmerIntensity(v)
                 }
                 .accessibilityIdentifier("programmerIntensity")
+            Image(systemName: "sun.max.fill").foregroundStyle(.secondary)
             Text("\(Int((value * 100).rounded())) %").monospacedDigit().frame(width: 52, alignment: .trailing)
         }
     }

@@ -66,3 +66,10 @@ Owner request: see the whole show while playing back. The Playback page shows a 
 - Output mode lives in UserDefaults, so the UI tests launch with `-outputMode previewOnly`; the cue list test switches to Console mode and used to leak that into the next test (B then fired the console blackout).
 - `EngineRunnerTests.tickRateApprox` upper bound on CI raised to 60 frames: timer catch-up bursts gave 45–46.
 - No drag tests; the Library cue editor and effect editor are driven by clicks only.
+
+## 2026-11-16: UI makeover (sidebar, shared design system)
+
+- The TabView became a `NavigationSplitView` with a grouped sidebar (Show: Playback; Build: Programmer, Stage, Library; Setup: Fixtures, Devices, Console). Config is now called "Fixtures" in the UI. Sidebar rows keep the old tab names in their identifiers (`sidebar.Config`, ...); the selected page is remembered with `@SceneStorage("selectedPage")`. Playback is the default page, so `ConfigFlowUITests` now opens `sidebar.Config` first.
+- Toolbar: a status pill (dot + "Live · Direct · 30 Hz" / "Preview only" / red "Adapter lost", identifier `outputStatus` with `frameSum=` value) and the ARM toggle. Blackout stays on the Playback and Console pages only (no duplicate `blackoutButton` identifier).
+- `App/Design/` holds `Card`, `SectionHeader`, `NoticeBanner`, spacing constants (`Space`) and `TileButtonStyle` (playback tiles). Pages use these instead of ad-hoc paddings. Programmer, Library, Devices and the Console side column are grouped `Form`s; the Programmer keeps a compact "Recorded" list (`librarySnapshot.N`).
+- Behaviour, DMXCore and the show format are unchanged. `ScreenshotUITests` captures every page; CI exports the attachments as the `screenshots` artifact.

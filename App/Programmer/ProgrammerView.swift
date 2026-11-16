@@ -1,7 +1,7 @@
 import SwiftUI
 import ShowModel
 
-/// The "Programmer" tab: stage on the left, controls on the right.
+/// The Programmer page: stage on the left, grouped controls on the right, Record / Clear in a bottom bar.
 struct ProgrammerView: View {
     @Binding var document: ShowDocument
     @Binding var selection: [UUID]
@@ -14,35 +14,58 @@ struct ProgrammerView: View {
         HSplitView {
             StageView(document: $document, selection: $selection, model: model)
                 .frame(minWidth: 380)
-            ScrollView {
-                VStack(alignment: .leading, spacing: 14) {
-                    ProgrammerBanner(model: model)
-                    selectionList
-                    IntensityControl(model: model)
-                    ColorControl(model: model)
-                    if selectedTypes.contains(where: hasPanTilt) { PanTiltPad(model: model) }
-                    StrobeControl(model: model)
-                    RawChannelFaders(patch: patch, selection: selection, model: model)
-                    HStack {
-                        Button("Record\u{2026}") { showRecord = true }
-                            .disabled(model.programmer.isEmpty)
-                            .accessibilityIdentifier("recordButton")
-                        Button("Clear (Esc)") { model.clearProgrammer() }
-                            .keyboardShortcut(.escape, modifiers: [])
-                            .accessibilityIdentifier("clearProgrammer")
+            VStack(spacing: 0) {
+                ProgrammerBanner(model: model).padding([.horizontal, .top], Space.sm)
+                Form {
+                    selectionSection
+                    Section {
+                        IntensityControl(model: model)
+                    } header: { Label("Intensity", systemImage: "sun.max") }
+                    Section {
+                        ColorControl(model: model)
+                    } header: { Label("Colour", systemImage: "paintpalette") }
+                    if selectedTypes.contains(where: hasPanTilt) {
+                        Section {
+                            PanTiltPad(model: model)
+                        } header: { Label("Position", systemImage: "scope") }
                     }
-                    Divider()
+                    Section {
+                        StrobeControl(model: model)
+                    } header: { Label("Strobe", systemImage: "bolt") }
+                    Section {
+                        RawChannelFaders(patch: patch, selection: selection, model: model)
+                    } header: { Label("Channels", systemImage: "slider.vertical.3") }
                     library
                 }
-                .padding(12)
+                .formStyle(.grouped)
+                bottomBar
             }
-            .frame(minWidth: 380, idealWidth: 440, maxWidth: 560)
+            .frame(minWidth: 400, idealWidth: 460, maxWidth: 560)
         }
         .sheet(isPresented: $showRecord) {
             RecordSnapshotSheet { name, hex in
                 document.show.snapshots.append(model.programmer.record(name: name, colorHex: hex))
             }
         }
+    }
+
+    private var bottomBar: some View {
+        HStack(spacing: Space.sm) {
+            Button { model.clearProgrammer() } label: { Label("Clear", systemImage: "xmark.circle") }
+                .keyboardShortcut(.escape, modifiers: [])
+                .help("Clear the programmer (Esc)")
+                .accessibilityLabel("Clear (Esc)")
+                .accessibilityIdentifier("clearProgrammer")
+            Spacer()
+            Button { showRecord = true } label: { Label("Record\u{2026}", systemImage: "record.circle") }
+                .buttonStyle(.borderedProminent)
+                .disabled(model.programmer.isEmpty)
+                .help("Record the programmer as a snapshot")
+                .accessibilityIdentifier("recordButton")
+        }
+        .controlSize(.large)
+        .padding(Space.sm)
+        .background(.bar)
     }
 
     private var selectedTypes: [FixtureType] {
@@ -62,27 +85,38 @@ struct ProgrammerView: View {
                 })
     }
 
-    private var selectionList: some View {
-        VStack(alignment: .leading, spacing: 4) {
+    private var selectionSection: some View {
+        Section {
+            if patch.fixtures.isEmpty {
+                ContentUnavailableView {
+                    Label("No fixtures", systemImage: "lightbulb.slash")
+                } description: {
+                    Text("Add fixtures on the Fixtures page first.")
+                }
+                .frame(maxWidth: .infinity, minHeight: 100)
+            } else {
+                List(patch.fixtures, selection: selectionBinding) { f in
+                    Text(f.name).tag(f.id)
+                        .accessibilityIdentifier("fixtureRow.\(f.name)")
+                }
+                .frame(height: 120)
+                .accessibilityIdentifier("fixtureList")
+            }
+        } header: {
             HStack {
-                Text("Fixtures (\(selection.count) selected)").font(.headline)
+                Label("Selection", systemImage: "checkmark.circle")
+                Text("\(selection.count) selected").font(.caption).foregroundStyle(.secondary)
                 Spacer()
                 Button("Select all") { selection = patch.fixtures.map(\.id) }
                     .accessibilityIdentifier("selectAllButton")
                 Button("None") { selection = [] }
             }
-            List(patch.fixtures, selection: selectionBinding) { f in
-                Text(f.name).tag(f.id)
-                    .accessibilityIdentifier("fixtureRow.\(f.name)")
-            }
-            .frame(height: 120)
-            .accessibilityIdentifier("fixtureList")
+            .controlSize(.small)
         }
     }
 
     private var library: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Library").font(.headline)
+        Section {
             if document.show.snapshots.isEmpty {
                 Text("No snapshots yet. Record one from the programmer.").foregroundStyle(.secondary)
             }
@@ -95,12 +129,14 @@ struct ProgrammerView: View {
                     Spacer()
                     Button { document.show.snapshots.removeAll { $0.id == snap.id } } label: { Image(systemName: "trash") }
                         .buttonStyle(.borderless)
+                        .help("Delete \(snap.name)")
                         .accessibilityLabel("Delete \(snap.name)")
                 }
                 .accessibilityElement(children: .contain)
             }
+        } header: {
+            Label("Recorded", systemImage: "books.vertical")
         }
-        .accessibilityIdentifier("library")
     }
 }
 
@@ -110,14 +146,15 @@ struct ProgrammerBanner: View {
 
     var body: some View {
         if !model.programmer.isEmpty {
-            HStack {
-                Text("Programmer active: overrides playback")
+            HStack(spacing: Space.xs) {
+                Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                Text("Programmer active: overrides playback").font(.callout)
                 Spacer()
-                Button("Clear") { model.clearProgrammer() }
+                Button("Clear") { model.clearProgrammer() }.controlSize(.small)
             }
-            .padding(8)
-            .background(Color.orange.opacity(0.85), in: RoundedRectangle(cornerRadius: 6))
-            .foregroundStyle(.black)
+            .padding(.horizontal, Space.sm).padding(.vertical, Space.xs)
+            .background(Color.orange.opacity(0.18), in: RoundedRectangle(cornerRadius: 10))
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.orange.opacity(0.4), lineWidth: 1))
             .accessibilityIdentifier("programmerBanner")
         }
     }

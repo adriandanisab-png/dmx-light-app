@@ -7,8 +7,8 @@ struct StrobeControl: View {
     @State private var value = 0.0
 
     var body: some View {
-        HStack {
-            Text("Strobe").frame(width: 70, alignment: .leading)
+        HStack(spacing: Space.sm) {
+            Image(systemName: "tortoise").foregroundStyle(.secondary)
             Slider(value: $value, in: 0...255)
                 .onChange(of: value) { _, v in
                     let byte = UInt8(min(max(v.rounded(), 0), 255))
@@ -17,6 +17,7 @@ struct StrobeControl: View {
                     }
                 }
                 .accessibilityIdentifier("programmerStrobe")
+            Image(systemName: "hare").foregroundStyle(.secondary)
             Text("\(Int(value))").monospacedDigit().frame(width: 52, alignment: .trailing)
         }
     }

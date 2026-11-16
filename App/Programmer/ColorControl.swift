@@ -14,21 +14,21 @@ struct ColorControl: View {
     ]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text("Colour").frame(width: 70, alignment: .leading)
+        VStack(alignment: .leading, spacing: Space.sm) {
+            LabeledContent("Custom") {
                 ColorPicker("", selection: Binding(get: { color }, set: { apply($0) }), supportsOpacity: false)
                     .labelsHidden()
                     .accessibilityIdentifier("programmerColorPicker")
             }
-            LazyVGrid(columns: Array(repeating: GridItem(.fixed(30), spacing: 6), count: 12), alignment: .leading, spacing: 6) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 6), alignment: .leading, spacing: 6) {
                 ForEach(Self.swatches, id: \.name) { s in
                     Button { apply(Color(hex: s.hex)) } label: {
-                        RoundedRectangle(cornerRadius: 5).fill(Color(hex: s.hex)).frame(width: 28, height: 22)
-                            .overlay(RoundedRectangle(cornerRadius: 5).stroke(Color.white.opacity(0.4)))
+                        RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color(hex: s.hex))
+                            .frame(height: 28)
+                            .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(Color.white.opacity(0.35)))
                     }
                     .buttonStyle(.plain)
-                    .help(s.name)
+                    .help(s.name.capitalized)
                     .accessibilityLabel(s.name)
                     .accessibilityIdentifier("swatch.\(s.name)")
                 }

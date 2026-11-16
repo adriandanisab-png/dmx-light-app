@@ -7,11 +7,15 @@ struct PanTiltPad: View {
     @State private var point = CGPoint(x: 0.5, y: 0.5)
 
     var body: some View {
-        HStack(alignment: .top) {
-            Text("Pan/Tilt").frame(width: 70, alignment: .leading)
+        HStack {
+            Spacer()
             GeometryReader { geo in
                 ZStack(alignment: .topLeading) {
-                    RoundedRectangle(cornerRadius: 6).fill(Color.gray.opacity(0.25))
+                    RoundedRectangle(cornerRadius: 10).fill(Color.white.opacity(0.08))
+                    Path { p in
+                        p.move(to: CGPoint(x: geo.size.width / 2, y: 0)); p.addLine(to: CGPoint(x: geo.size.width / 2, y: geo.size.height))
+                        p.move(to: CGPoint(x: 0, y: geo.size.height / 2)); p.addLine(to: CGPoint(x: geo.size.width, y: geo.size.height / 2))
+                    }.stroke(Color.white.opacity(0.12))
                     Circle().fill(Color.accentColor).frame(width: 14, height: 14)
                         .offset(x: point.x * geo.size.width - 7, y: point.y * geo.size.height - 7)
                 }
@@ -25,10 +29,11 @@ struct PanTiltPad: View {
                     }
                 })
             }
-            .frame(width: 160, height: 120)
+            .frame(width: 200, height: 140)
             .accessibilityElement()
             .accessibilityLabel("Pan tilt pad")
             .accessibilityIdentifier("panTiltPad")
+            Spacer()
         }
     }
 }

@@ -10,24 +10,21 @@ struct EffectEditTarget: Identifiable {
 
 struct CueListEditTarget: Identifiable { var id: UUID }
 
-/// The "Library" tab: snapshots, effects and cue lists with create, duplicate, rename, colour and delete.
+/// The Library page: snapshots, effects and cue lists with create, duplicate, rename, colour and delete.
 struct LibraryView: View {
     @Binding var document: ShowDocument
     @ObservedObject var model: AppModel
     @State private var effectTarget: EffectEditTarget?
     @State private var cueListTarget: CueListEditTarget?
+    @SceneStorage("selectedPage") private var pageRaw = AppPage.playback.rawValue
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                snapshotsSection
-                Divider()
-                effectsSection
-                Divider()
-                cueListsSection
-            }
-            .padding(16)
+        Form {
+            snapshotsSection
+            effectsSection
+            cueListsSection
         }
+        .formStyle(.grouped)
         .sheet(item: $effectTarget) { target in
             EffectEditor(target: target, document: $document, model: model)
         }
@@ -39,10 +36,16 @@ struct LibraryView: View {
     // MARK: Snapshots
 
     private var snapshotsSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Snapshots").font(.title3.bold())
+        Section {
             if document.show.snapshots.isEmpty {
-                Text("No snapshots yet. Record one in the Programmer tab.").foregroundStyle(.secondary)
+                ContentUnavailableView {
+                    Label("No snapshots yet", systemImage: "square.grid.2x2")
+                } description: {
+                    Text("Record the programmer's look as a snapshot.")
+                } actions: {
+                    Button("Open Programmer") { pageRaw = AppPage.programmer.rawValue }
+                }
+                .frame(maxWidth: .infinity, minHeight: 130)
             }
             ForEach($document.show.snapshots) { $snap in
                 LibraryRow(name: $snap.name, colorHex: $snap.colorHex, identifier: "snapshot.\(snap.name)",
@@ -52,25 +55,24 @@ struct LibraryView: View {
                            },
                            onDelete: { document.show.snapshots.removeAll { $0.id == snap.id } })
             }
+        } header: {
+            SectionHeader("Snapshots", systemImage: "square.grid.2x2")
         }
     }
 
     // MARK: Effects
 
     private var effectsSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text("Effects").font(.title3.bold())
-                Spacer()
-                Button("New effect") {
-                    effectTarget = EffectEditTarget(effect: Effect(name: "", kind: .intensityChase, fixtureIDs: []),
-                                                    isNew: true)
-                }
-                .accessibilityIdentifier("newEffectButton")
-            }
+        Section {
             if document.show.effects.isEmpty {
-                Text("No effects yet. Make one here, or click a preset on the Playback page.")
-                    .foregroundStyle(.secondary)
+                ContentUnavailableView {
+                    Label("No effects yet", systemImage: "wand.and.stars")
+                } description: {
+                    Text("Make one here, or click a preset on the Playback page.")
+                } actions: {
+                    Button("New effect") { newEffect() }
+                }
+                .frame(maxWidth: .infinity, minHeight: 130)
             }
             ForEach($document.show.effects) { $effect in
                 EffectRow(effect: $effect,
@@ -81,25 +83,32 @@ struct LibraryView: View {
                           },
                           onDelete: { document.show.effects.removeAll { $0.id == effect.id } })
             }
+        } header: {
+            SectionHeader("Effects", systemImage: "wand.and.stars") {
+                Button { newEffect() } label: { Label("New effect", systemImage: "plus") }
+                    .controlSize(.small)
+                    .accessibilityIdentifier("newEffectButton")
+            }
         }
+    }
+
+    private func newEffect() {
+        effectTarget = EffectEditTarget(effect: Effect(name: "", kind: .intensityChase, fixtureIDs: []), isNew: true)
     }
 
     // MARK: Cue lists
 
     private var cueListsSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text("Cue lists").font(.title3.bold())
-                Spacer()
-                Button("New cue list") {
-                    let list = CueList(name: "Cue list \(document.show.cueLists.count + 1)")
-                    document.show.cueLists.append(list)
-                    cueListTarget = CueListEditTarget(id: list.id)
-                }
-                .accessibilityIdentifier("newCueListButton")
-            }
+        Section {
             if document.show.cueLists.isEmpty {
-                Text("No cue lists yet.").foregroundStyle(.secondary)
+                ContentUnavailableView {
+                    Label("No cue lists yet", systemImage: "list.number")
+                } description: {
+                    Text("A cue list steps through looks with GO.")
+                } actions: {
+                    Button("New cue list") { newCueList() }
+                }
+                .frame(maxWidth: .infinity, minHeight: 130)
             }
             ForEach($document.show.cueLists) { $list in
                 HStack {
@@ -110,12 +119,25 @@ struct LibraryView: View {
                     Button("Edit") { cueListTarget = CueListEditTarget(id: list.id) }
                         .accessibilityIdentifier("editCueList.\(list.name)")
                     Button { duplicate(list) } label: { Image(systemName: "plus.square.on.square") }
+                        .buttonStyle(.borderless)
                         .help("Duplicate").accessibilityLabel("Duplicate \(list.name)")
                     Button { document.show.cueLists.removeAll { $0.id == list.id } } label: { Image(systemName: "trash") }
-                        .buttonStyle(.borderless).accessibilityLabel("Delete \(list.name)")
+                        .buttonStyle(.borderless).help("Delete").accessibilityLabel("Delete \(list.name)")
                 }
             }
+        } header: {
+            SectionHeader("Cue lists", systemImage: "list.number") {
+                Button { newCueList() } label: { Label("New cue list", systemImage: "plus") }
+                    .controlSize(.small)
+                    .accessibilityIdentifier("newCueListButton")
+            }
         }
+    }
+
+    private func newCueList() {
+        let list = CueList(name: "Cue list \(document.show.cueLists.count + 1)")
+        document.show.cueLists.append(list)
+        cueListTarget = CueListEditTarget(id: list.id)
     }
 
     private func duplicate(_ list: CueList) {
@@ -142,9 +164,10 @@ struct LibraryRow: View {
                 .accessibilityIdentifier(identifier)
             Spacer()
             Button(action: onDuplicate) { Image(systemName: "plus.square.on.square") }
+                .buttonStyle(.borderless)
                 .help("Duplicate").accessibilityLabel("Duplicate \(name)")
             Button(action: onDelete) { Image(systemName: "trash") }
-                .buttonStyle(.borderless).accessibilityLabel("Delete \(name)")
+                .buttonStyle(.borderless).help("Delete").accessibilityLabel("Delete \(name)")
         }
     }
 }

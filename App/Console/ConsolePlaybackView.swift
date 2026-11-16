@@ -14,23 +14,24 @@ struct ConsolePlaybackView: View {
             }
             .pickerStyle(.segmented).frame(width: 220)
             .accessibilityIdentifier("consoleMode")
-            Button("Reset console\u{2026}") { showReset = true }
+            Button { showReset = true } label: { Label("Reset console\u{2026}", systemImage: "arrow.counterclockwise") }
             Spacer()
             let on = model.console.state.blackout
             Button {
                 Task { await model.fire(.blackout) }
             } label: {
-                Text("BLACKOUT")
+                Label("Blackout", systemImage: on ? "moon.fill" : "moon")
                     .font(.title2.bold())
-                    .frame(minWidth: 180, minHeight: 44)
+                    .frame(minWidth: 170, minHeight: 36)
             }
             .buttonStyle(.borderedProminent)
-            .tint(on ? .red : .gray)
+            .controlSize(.extraLarge)
+            .tint(on ? .red : Color.red.opacity(0.45))
             .keyboardShortcut("b", modifiers: [])
             .help("Blackout (B)")
             .accessibilityIdentifier("blackoutButton")
             .accessibilityValue(on ? "on" : "off")
         }
-        .padding([.horizontal, .top], 8)
+        .padding([.horizontal, .top], Space.sm)
     }
 }

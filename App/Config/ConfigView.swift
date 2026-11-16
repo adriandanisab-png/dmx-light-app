@@ -1,7 +1,7 @@
 import SwiftUI
 import ShowModel
 
-/// The "Config" tab: fixture types, patch, touch test and channel monitor.
+/// The Fixtures page (was Config): fixture types, patch, touch test and channel monitor.
 struct ConfigView: View {
     @Binding var document: ShowDocument
     @ObservedObject var model: AppModel
@@ -20,23 +20,35 @@ struct ConfigView: View {
     var body: some View {
         VStack(spacing: 0) {
             IssueBanner(patch: patch.wrappedValue)
+                .padding(.horizontal, Space.md).padding(.top, Space.sm)
             HSplitView {
                 typesColumn.frame(minWidth: 300, idealWidth: 340, maxWidth: 440)
                 VStack(spacing: 0) {
-                    HStack {
-                        Text("Patch").font(.headline)
-                        Spacer()
-                        Button("Add fixtures\u{2026}") { showAddSheet = true }
+                    SectionHeader("Patch", systemImage: "list.number") {
+                        Button { showAddSheet = true } label: { Label("Add fixtures\u{2026}", systemImage: "plus") }
+                            .buttonStyle(.borderedProminent)
                             .disabled(patch.wrappedValue.types.isEmpty)
+                            .help(patch.wrappedValue.types.isEmpty ? "Create a fixture type first" : "Patch new fixtures")
                             .accessibilityIdentifier("addFixturesButton")
                     }
-                    .padding(8)
-                    PatchTable(patch: patch, selectedFixtureID: $selectedFixtureID)
+                    .padding(Space.sm)
+                    if patch.wrappedValue.fixtures.isEmpty {
+                        ContentUnavailableView {
+                            Label("No fixtures patched", systemImage: "lightbulb.slash")
+                        } description: {
+                            Text(patch.wrappedValue.types.isEmpty
+                                 ? "Start with a fixture type: choose New from template on the left."
+                                 : "Add fixtures of a type to give them DMX addresses.")
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    } else {
+                        PatchTable(patch: patch, selectedFixtureID: $selectedFixtureID)
+                    }
                     Divider()
                     Picker("", selection: $lowerTab) {
                         ForEach(LowerTab.allCases) { Text($0.rawValue).tag($0) }
                     }
-                    .pickerStyle(.segmented).labelsHidden().padding(8)
+                    .pickerStyle(.segmented).labelsHidden().frame(width: 280).padding(Space.xs)
                     Group {
                         switch lowerTab {
                         case .touch:
@@ -57,20 +69,20 @@ struct ConfigView: View {
 
     private var typesColumn: some View {
         VStack(spacing: 0) {
-            HStack {
-                Text("Fixture types").font(.headline)
-                Spacer()
-                Menu("New from template\u{2026}") {
+            SectionHeader("Fixture types", systemImage: "lightspectrum.horizontal") {
+                Menu {
                     ForEach(BuiltInTemplates.all) { template in
                         Button(template.name) { addType(from: template) }
                     }
                     Divider()
                     Button("Empty type") { addType(from: FixtureType(name: "New type", channels: [])) }
+                } label: {
+                    Label("New from template\u{2026}", systemImage: "plus")
                 }
                 .fixedSize()
                 .accessibilityIdentifier("newFromTemplate")
             }
-            .padding(8)
+            .padding(Space.sm)
             List(selection: $selectedTypeID) {
                 ForEach(patch.wrappedValue.types) { type in
                     HStack {
@@ -94,8 +106,12 @@ struct ConfigView: View {
             if let id = selectedTypeID, let binding = typeBinding(id) {
                 FixtureTypeEditor(type: binding)
             } else {
-                Text("Select a fixture type to edit it.").foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                ContentUnavailableView {
+                    Label("No type selected", systemImage: "lightspectrum.horizontal")
+                } description: {
+                    Text("Select a fixture type to edit its channels.")
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
     }
@@ -177,15 +193,17 @@ struct IssueBanner: View {
     var body: some View {
         let issues = patch.validate()
         if !issues.isEmpty {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Patch problems").font(.headline)
+            VStack(alignment: .leading, spacing: 4) {
+                Label("Patch problems", systemImage: "exclamationmark.triangle.fill")
+                    .font(.headline).foregroundStyle(.red)
                 ForEach(Array(issues.enumerated()), id: \.offset) { _, issue in
-                    Text(PatchIssueText.text(for: issue, in: patch))
+                    Text(PatchIssueText.text(for: issue, in: patch)).font(.callout)
                 }
             }
+            .padding(Space.sm)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(8)
-            .background(Color.red.opacity(0.25))
+            .background(Color.red.opacity(0.15), in: RoundedRectangle(cornerRadius: 10))
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.red.opacity(0.4), lineWidth: 1))
             .accessibilityElement(children: .combine)
             .accessibilityIdentifier("patchIssueBanner")
         }

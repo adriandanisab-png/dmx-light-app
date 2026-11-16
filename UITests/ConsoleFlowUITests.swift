@@ -24,7 +24,7 @@ final class ConsoleFlowUITests: XCTestCase {
     }
 
     private func openConsoleTab() {
-        let tab = app.radioButtons["Console"].exists ? app.radioButtons["Console"] : app.tabs["Console"]
+        let tab = element("sidebar.Console")
         XCTAssertTrue(tab.waitForExistence(timeout: 10))
         tab.click()
     }

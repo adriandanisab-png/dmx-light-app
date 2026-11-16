@@ -2,46 +2,64 @@ import SwiftUI
 import ShowModel
 import DMXOutput
 
-/// The "Devices" tab: output mode, serial port (Direct) and MIDI settings (Console).
+/// The Devices page: output mode, serial port (Direct) and MIDI settings (Console).
 struct DevicesView: View {
     @Binding var document: ShowDocument
     @ObservedObject var model: AppModel
     @State private var ports: [SerialPortInfo] = []
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
+        Form {
+            Section {
                 OutputModePicker(model: model)
                 if model.isArmed {
-                    Text("Disarm to change the output settings.").font(.callout).foregroundStyle(.orange)
+                    Label("Disarm to change the output settings.", systemImage: "lock.fill")
+                        .font(.callout).foregroundStyle(.orange)
                 }
-                switch model.outputMode {
-                case .previewOnly:
-                    Text("Preview only: the stage shows the lights, nothing is sent anywhere.")
-                        .foregroundStyle(.secondary)
-                case .directOpenDMX:
-                    direct
-                case .consoleMIDI:
-                    MIDISettingsView(map: $document.show.console, model: model)
-                        .onAppear { model.loadConsoleMap(document.show.console) }
-                }
-                Divider()
-                Text("Status: \(model.outputStatus)").font(.callout).foregroundStyle(.secondary)
+            } header: {
+                SectionHeader("Output", systemImage: "arrow.up.forward.app")
             }
-            .padding(16)
+            switch model.outputMode {
+            case .previewOnly:
+                Section {
+                    ContentUnavailableView {
+                        Label("Preview only", systemImage: "eye")
+                    } description: {
+                        Text("The stage shows the lights. Nothing is sent anywhere.")
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 130)
+                }
+            case .directOpenDMX:
+                direct
+            case .consoleMIDI:
+                MIDISettingsView(map: $document.show.console, model: model)
+                    .onAppear { model.loadConsoleMap(document.show.console) }
+            }
+            Section {
+                LabeledContent("Status") {
+                    HStack(spacing: 6) {
+                        Circle().fill(model.outputStatus == "Adapter lost" ? Color.red : (model.isArmed ? Color.green : Color.gray))
+                            .frame(width: 8, height: 8)
+                        Text(model.outputStatus)
+                    }
+                }
+            }
         }
+        .formStyle(.grouped)
         .onAppear { ports = SerialPortDiscovery.ports() }
     }
 
-    private var direct: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("DMX adapter").font(.headline)
-                Button { ports = SerialPortDiscovery.ports() } label: { Image(systemName: "arrow.clockwise") }
-                    .help("Refresh port list")
-            }
+    @ViewBuilder private var direct: some View {
+        Section {
             if ports.isEmpty {
-                Text("No serial ports found. Plug in the SH-RS09B.").foregroundStyle(.secondary)
+                ContentUnavailableView {
+                    Label("No serial ports found", systemImage: "cable.connector.slash")
+                } description: {
+                    Text("Plug in the SH-RS09B and refresh the list.")
+                } actions: {
+                    Button("Refresh") { ports = SerialPortDiscovery.ports() }
+                }
+                .frame(maxWidth: .infinity, minHeight: 130)
             }
             Picker("Port", selection: Binding(get: { model.portPath }, set: { model.setPort($0) })) {
                 Text("None").tag(String?.none)
@@ -57,6 +75,12 @@ struct DevicesView: View {
                 .disabled(model.isArmed)
             Text("30 Hz is the default. If lights flicker, try 25 or 40 Hz.")
                 .font(.caption).foregroundStyle(.secondary)
+        } header: {
+            SectionHeader("DMX adapter", systemImage: "cable.connector") {
+                Button { ports = SerialPortDiscovery.ports() } label: { Image(systemName: "arrow.clockwise") }
+                    .buttonStyle(.borderless)
+                    .help("Refresh port list")
+            }
         }
     }
 

@@ -24,7 +24,10 @@ final class ConfigFlowUITests: XCTestCase {
     /// New document, Config tab, New from template... -> RGB, Add fixtures (count 4):
     /// the patch table shows 4 rows at addresses 1, 4, 7, 10.
     func testAddRGBFixturesShowsFourRows() throws {
-        // Config is the first tab and is selected by default.
+        // Playback is the default page: open Fixtures (sidebar.Config) first.
+        let sidebar = element("sidebar.Config")
+        XCTAssertTrue(sidebar.waitForExistence(timeout: 10))
+        sidebar.click()
         let templates = element("newFromTemplate")
         XCTAssertTrue(templates.waitForExistence(timeout: 10))
         templates.click()

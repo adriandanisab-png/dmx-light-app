@@ -141,7 +141,7 @@ struct StageTabView: View {
                 Text("Preview").tag(0)
                 Text("Channels").tag(1)
             }
-            .pickerStyle(.segmented).labelsHidden().frame(width: 240).padding(8)
+            .pickerStyle(.segmented).labelsHidden().frame(width: 240).padding(Space.sm)
             .accessibilityIdentifier("stageSubTab")
             if sub == 0 {
                 StageView(document: $document, selection: $selection, model: model)

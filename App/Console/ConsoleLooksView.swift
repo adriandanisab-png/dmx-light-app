@@ -10,8 +10,7 @@ struct ConsoleLooksView: View {
     @State private var newName = ""
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Looks").font(.headline)
+        Section {
             HStack {
                 TextField("Look name", text: $newName).textFieldStyle(.roundedBorder)
                 Button("Save look") {
@@ -32,16 +31,18 @@ struct ConsoleLooksView: View {
                     Button {
                         Task { await model.recall(look) }
                     } label: {
-                        Text("Recall").frame(minWidth: 56, minHeight: 28)
+                        Text("Recall").frame(minWidth: 56)
                     }
                     .buttonStyle(.borderedProminent)
                     .accessibilityIdentifier("recallLook.\(look.name)")
                     TextField("Name", text: $look.name).textFieldStyle(.roundedBorder)
                     Text("\(look.targets.count)").font(.caption).foregroundStyle(.secondary)
                     Button { map.looks.removeAll { $0.id == look.id } } label: { Image(systemName: "trash") }
-                        .buttonStyle(.borderless)
+                        .buttonStyle(.borderless).help("Delete look")
                 }
             }
+        } header: {
+            SectionHeader("Looks", systemImage: "square.stack.3d.up")
         }
     }
 }

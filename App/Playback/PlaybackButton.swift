@@ -15,18 +15,9 @@ struct PlaybackButton: View {
         let button = Button {
             onFire(NSEvent.modifierFlags.contains(.shift))
         } label: {
-            VStack(spacing: 2) {
-                Text(snapshot.name).font(.headline).lineLimit(2).multilineTextAlignment(.center)
-                Text(String(format: "%.1f s", snapshot.defaultFade)).font(.caption).opacity(0.8)
-            }
-            .frame(maxWidth: .infinity, minHeight: 72)
-            .padding(4)
-            .background(RoundedRectangle(cornerRadius: 8).fill(base.opacity(isOn ? 1 : 0.28)))
-            .overlay(RoundedRectangle(cornerRadius: 8)
-                .stroke(isOn ? Color.yellow : (isSelected ? Color.white.opacity(0.7) : Color.clear), lineWidth: 2))
-            .foregroundStyle(isOn ? Color.black : Color.primary)
+            TileLabel(title: snapshot.name, caption: String(format: "%.1f s", snapshot.defaultFade))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(TileButtonStyle(color: base, isOn: isOn, isSelected: isSelected))
         .accessibilityLabel(snapshot.name)
         .accessibilityIdentifier("playbackButton.\(snapshot.name)")
         .accessibilityValue(isOn ? "on" : "off")

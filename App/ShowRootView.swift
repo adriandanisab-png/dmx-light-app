@@ -1,45 +1,88 @@
 import SwiftUI
 import ShowModel
 
-/// Root of one document window: tabs, shared ARM control, status line and error toast.
+/// The pages of the sidebar. `legacyName` is the old tab name, kept for accessibility identifiers.
+enum AppPage: String, CaseIterable, Identifiable {
+    case playback, programmer, stage, library, config, devices, console
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .playback: return "Playback"
+        case .programmer: return "Programmer"
+        case .stage: return "Stage"
+        case .library: return "Library"
+        case .config: return "Fixtures"
+        case .devices: return "Devices"
+        case .console: return "Console"
+        }
+    }
+
+    var legacyName: String {
+        switch self {
+        case .config: return "Config"
+        default: return title
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .playback: return "play.circle"
+        case .programmer: return "slider.horizontal.3"
+        case .stage: return "theatermasks"
+        case .library: return "books.vertical"
+        case .config: return "lightbulb.2"
+        case .devices: return "cable.connector"
+        case .console: return "pianokeys"
+        }
+    }
+
+    static let groups: [(title: String, pages: [AppPage])] = [
+        ("Show", [.playback]),
+        ("Build", [.programmer, .stage, .library]),
+        ("Setup", [.config, .devices, .console]),
+    ]
+}
+
+/// Root of one document window: sidebar, page, unified toolbar (status + ARM) and error toast.
 struct ShowRootView: View {
     @Binding var document: ShowDocument
     @StateObject private var model = AppModel()
+    @SceneStorage("selectedPage") private var pageRaw = AppPage.playback.rawValue
 
-    /// The tab-embedded views get the model explicitly; nothing uses `@EnvironmentObject`.
+    private var page: AppPage { AppPage(rawValue: pageRaw) ?? .playback }
+
+    /// Pages get the model explicitly; nothing uses `@EnvironmentObject`.
     var body: some View {
-        TabView {
-            ConfigView(document: $document, model: model)
-                .tabItem { Text("Config") }
-            StageTabView(document: $document, selection: selectionBinding, model: model)
-                .tabItem { Text("Stage") }
-            ProgrammerView(document: $document, selection: selectionBinding, model: model)
-                .tabItem { Text("Programmer") }
-            PlaybackView(document: $document, model: model)
-                .tabItem { Text("Playback") }
-            LibraryView(document: $document, model: model)
-                .tabItem { Text("Library") }
-            DevicesView(document: $document, model: model)
-                .tabItem { Text("Devices") }
-            ConsoleView(document: $document, model: model)
-                .tabItem { Text("Console") }
+        NavigationSplitView {
+            List(selection: Binding<AppPage?>(get: { page }, set: { if let p = $0 { pageRaw = p.rawValue } })) {
+                ForEach(AppPage.groups, id: \.title) { group in
+                    Section(group.title) {
+                        ForEach(group.pages) { p in
+                            Label(p.title, systemImage: p.systemImage)
+                                .tag(p)
+                                .accessibilityIdentifier("sidebar.\(p.legacyName)")
+                        }
+                    }
+                }
+            }
+            .listStyle(.sidebar)
+            .navigationSplitViewColumnWidth(min: 170, ideal: 190, max: 240)
+        } detail: {
+            detail
+                .navigationTitle(page.title)
         }
         .frame(minWidth: 1000, minHeight: 640)
         .preferredColorScheme(.dark)
         .toolbar {
-            ToolbarItem(placement: .primaryAction) { ArmButton(model: model) }
             ToolbarItem(placement: .status) { StatusLine(model: model) }
+            ToolbarItem(placement: .primaryAction) { ArmButton(model: model) }
         }
         .overlay(alignment: .bottom) {
             if let toast = model.toast {
-                Text(toast)
-                    .font(.headline)
-                    .padding(.horizontal, 16).padding(.vertical, 10)
-                    .background(Color.red.opacity(0.9), in: RoundedRectangle(cornerRadius: 8))
-                    .foregroundStyle(.white)
-                    .padding(.bottom, 24)
-                    .accessibilityIdentifier("toast")
-                    .transition(.opacity)
+                ToastView(text: toast)
+                    .padding(.bottom, Space.lg)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
         .animation(.default, value: model.toast)
@@ -60,23 +103,76 @@ struct ShowRootView: View {
         .onChange(of: document.show.console) { _, _ in model.loadShow(document.show) }
     }
 
+    @ViewBuilder private var detail: some View {
+        switch page {
+        case .playback: PlaybackView(document: $document, model: model)
+        case .programmer: ProgrammerView(document: $document, selection: selectionBinding, model: model)
+        case .stage: StageTabView(document: $document, selection: selectionBinding, model: model)
+        case .library: LibraryView(document: $document, model: model)
+        case .config: ConfigView(document: $document, model: model)
+        case .devices: DevicesView(document: $document, model: model)
+        case .console: ConsoleView(document: $document, model: model)
+        }
+    }
+
     private var selectionBinding: Binding<[UUID]> {
         Binding(get: { model.programmer.selection }, set: { model.setSelection($0) })
     }
 }
 
-/// Output status line: "Direct \u{00B7} /dev/cu.usbserial-A10K \u{00B7} 30 Hz" / "Adapter lost".
+/// Bottom-centre capsule with an SF Symbol. Keeps the `toast` identifier on its text.
+struct ToastView: View {
+    let text: String
+
+    var body: some View {
+        HStack(spacing: Space.xs) {
+            Image(systemName: "exclamationmark.circle.fill").foregroundStyle(.orange)
+            Text(text).font(.callout.weight(.medium))
+                .accessibilityIdentifier("toast")
+        }
+        .padding(.horizontal, Space.md).padding(.vertical, Space.sm)
+        .background(.regularMaterial, in: Capsule())
+        .overlay(Capsule().stroke(Color.white.opacity(0.12), lineWidth: 1))
+        .shadow(color: .black.opacity(0.35), radius: 12, y: 4)
+    }
+}
+
+/// Output status pill: coloured dot plus "Live \u{00B7} Direct \u{00B7} 30 Hz", "Preview only" or "Adapter lost".
 /// Takes the model explicitly (toolbar items don't inherit the environment).
 struct StatusLine: View {
     @ObservedObject var model: AppModel
 
+    private var parts: (text: String, color: Color) {
+        let status = model.outputStatus
+        if status == "Adapter lost" { return (status, .red) }
+        switch model.outputMode {
+        case .previewOnly: return ("Preview only", .gray)
+        case .directOpenDMX:
+            if model.portPath == nil { return ("Direct \u{00B7} no adapter", .yellow) }
+            if model.isArmed { return ("Live \u{00B7} Direct \u{00B7} \(Int(model.refreshHz)) Hz", .green) }
+            return ("Direct \u{00B7} disarmed", .yellow)
+        case .consoleMIDI:
+            if model.isArmed { return ("Live \u{00B7} Console \u{00B7} MIDI", .green) }
+            return ("Console \u{00B7} disarmed", .yellow)
+        }
+    }
+
     var body: some View {
         // Polls once a second so "Adapter lost" appears and clears without other UI changes.
         TimelineView(.periodic(from: .now, by: 1)) { _ in
-            Text(model.outputStatus).font(.caption)
-                .foregroundStyle(model.outputStatus == "Adapter lost" ? Color.red : Color.secondary)
-                .accessibilityIdentifier("outputStatus")
-                .accessibilityValue("frameSum=\(model.frameSum)")
+            let p = parts
+            HStack(spacing: 6) {
+                Circle().fill(p.color).frame(width: 8, height: 8)
+                    .shadow(color: p.color.opacity(0.8), radius: 3)
+                Text(p.text).font(.caption.weight(.medium)).lineLimit(1)
+            }
+            .padding(.horizontal, 10).padding(.vertical, 4)
+            .background(Capsule().fill(p.color.opacity(0.14)))
+            .foregroundStyle(p.color == .red ? Color.red : Color.primary)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(p.text)
+            .accessibilityIdentifier("outputStatus")
+            .accessibilityValue("frameSum=\(model.frameSum)")
         }
     }
 }
@@ -91,9 +187,9 @@ struct ArmButton: View {
         Button {
             model.setArmed(!model.isArmed)
         } label: {
-            Text(model.isArmed ? "ARMED" : "ARM")
+            Label(model.isArmed ? "ARMED" : "ARM", systemImage: model.isArmed ? "bolt.fill" : "bolt.slash")
                 .fontWeight(.bold)
-                .padding(.horizontal, 8)
+                .padding(.horizontal, 6)
         }
         .tint(model.isArmed ? .red : nil)
         .buttonStyle(.borderedProminent)
