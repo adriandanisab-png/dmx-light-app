@@ -164,15 +164,14 @@ struct StatusLine: View {
             HStack(spacing: 6) {
                 Circle().fill(p.color).frame(width: 8, height: 8)
                     .shadow(color: p.color.opacity(0.8), radius: 3)
+                    .accessibilityHidden(true)
                 Text(p.text).font(.caption.weight(.medium)).lineLimit(1)
+                    .accessibilityIdentifier("outputStatus")
+                    .accessibilityValue("frameSum=\(model.frameSum)")
             }
             .padding(.horizontal, 10).padding(.vertical, 4)
             .background(Capsule().fill(p.color.opacity(0.14)))
             .foregroundStyle(p.color == .red ? Color.red : Color.primary)
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(p.text)
-            .accessibilityIdentifier("outputStatus")
-            .accessibilityValue("frameSum=\(model.frameSum)")
         }
     }
 }

@@ -30,9 +30,24 @@ jobs:
         run: |
           mkdir -p build/screenshots
           xcrun xcresulttool export attachments --path build/UITests.xcresult --output-path build/screenshots || true
-          ls build/screenshots | head -40 || true
+          find build/screenshots -type f | head -40 || true
+      - name: Print screenshots to the log (artifact storage quota fallback)
+        if: always()
+        run: |
+          mkdir -p build/shots-small
+          for f in $(find build/screenshots -name '*.png'); do
+            n=$(basename "$f" .png)
+            sips -s format jpeg -s formatOptions 82 "$f" --out "build/shots-small/$n.jpg" >/dev/null 2>&1 || true
+          done
+          for f in build/shots-small/*.jpg; do
+            echo "SHOT-BEGIN $(basename "$f")"
+            base64 < "$f"
+            echo "SHOT-END"
+          done
+        continue-on-error: true
       - uses: actions/upload-artifact@v4
         if: always()
+        continue-on-error: true
         with:
           name: screenshots
           path: build/screenshots
@@ -45,11 +60,13 @@ jobs:
           cd build/Build/Products/Release && ditto -c -k --keepParent DMXBridge.app DMXBridge.zip
       - name: Upload test results on failure
         if: failure() && steps.uitests.outcome == 'failure'
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: UITests-xcresult
           path: build/UITests.xcresult
       - uses: actions/upload-artifact@v4
+        continue-on-error: true  # artifact storage quota was full on 2026-11-16
         with:
           name: DMXBridge-app
           path: build/Build/Products/Release/DMXBridge.zip
