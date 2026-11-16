@@ -22,7 +22,7 @@ struct ConsolePlaybackView: View {
             } label: {
                 Label("Blackout", systemImage: on ? "moon.fill" : "moon")
                     .font(.title2.bold())
-                    .frame(minWidth: 170, minHeight: 36)
+                    .frame(minWidth: 120, minHeight: 36)
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.extraLarge)

@@ -11,14 +11,14 @@ struct PatchTable: View {
         let badged = Set(issues.flatMap { PatchIssueText.fixtureIDs(for: $0, in: patch) })
         VStack(spacing: 0) {
             HStack {
-                Text("Name").frame(minWidth: 120, alignment: .leading)
+                Text("Name").frame(width: 150, alignment: .leading)
                 Text("Type").frame(width: 150, alignment: .leading)
                 Text("Address").frame(width: 70, alignment: .leading)
                 Text("Scanner").frame(width: 70, alignment: .leading)
                 Text("Ch").frame(width: 36, alignment: .leading)
                 Spacer()
             }
-            .font(.caption).foregroundStyle(.secondary).padding(.horizontal, 8)
+            .font(.caption).foregroundStyle(.secondary).padding(.horizontal, 12)
             ScrollView {
                 LazyVStack(spacing: 2) {
                     ForEach($patch.fixtures) { $fixture in
@@ -34,7 +34,7 @@ struct PatchTable: View {
         let f = fixture.wrappedValue
         let selected = selectedFixtureID == f.id
         return HStack {
-            TextField("Name", text: fixture.name).textFieldStyle(.roundedBorder).frame(minWidth: 120)
+            TextField("Name", text: fixture.name).textFieldStyle(.roundedBorder).frame(width: 150)
             Picker("", selection: fixture.typeID) {
                 ForEach(patch.types) { Text($0.name).tag($0.id) }
             }

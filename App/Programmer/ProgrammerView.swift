@@ -99,7 +99,7 @@ struct ProgrammerView: View {
                     Text(f.name).tag(f.id)
                         .accessibilityIdentifier("fixtureRow.\(f.name)")
                 }
-                .frame(height: 120)
+                .frame(height: CGFloat(min(max(patch.fixtures.count, 2), 6)) * 26 + 8)
                 .accessibilityIdentifier("fixtureList")
             }
         } header: {

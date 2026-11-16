@@ -112,7 +112,7 @@ struct LibraryView: View {
             }
             ForEach($document.show.cueLists) { $list in
                 HStack {
-                    TextField("Name", text: $list.name).textFieldStyle(.roundedBorder).frame(maxWidth: 260)
+                    TextField("Name", text: $list.name).labelsHidden().textFieldStyle(.roundedBorder).frame(maxWidth: 260)
                         .accessibilityIdentifier("cueListName.\(list.name)")
                     Text("\(list.cues.count) cues").font(.caption).foregroundStyle(.secondary)
                     Spacer()
@@ -160,7 +160,7 @@ struct LibraryRow: View {
         HStack {
             ColorPicker("", selection: Binding(get: { Color(hex: colorHex) }, set: { colorHex = $0.hexString }),
                         supportsOpacity: false).labelsHidden()
-            TextField("Name", text: $name).textFieldStyle(.roundedBorder).frame(maxWidth: 260)
+            TextField("Name", text: $name).labelsHidden().textFieldStyle(.roundedBorder).frame(maxWidth: 260)
                 .accessibilityIdentifier(identifier)
             Spacer()
             Button(action: onDuplicate) { Image(systemName: "plus.square.on.square") }

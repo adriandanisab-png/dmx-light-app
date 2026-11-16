@@ -12,7 +12,7 @@ struct EffectRow: View {
         HStack {
             ColorPicker("", selection: Binding(get: { Color(hex: effect.colorHex) }, set: { effect.colorHex = $0.hexString }),
                         supportsOpacity: false).labelsHidden()
-            TextField("Name", text: $effect.name).textFieldStyle(.roundedBorder).frame(maxWidth: 260)
+            TextField("Name", text: $effect.name).labelsHidden().textFieldStyle(.roundedBorder).frame(maxWidth: 260)
                 .accessibilityIdentifier("effectName.\(effect.name)")
             Text("\(EffectEditor.title(effect.kind)) \u{00B7} \(effect.fixtureIDs.count) fixtures")
                 .font(.caption).foregroundStyle(.secondary)

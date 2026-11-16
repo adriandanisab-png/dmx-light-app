@@ -50,7 +50,7 @@ struct ConsoleGrid: View {
                 .foregroundStyle(isOn ? base.readableForeground : Color.primary)
         }
         .buttonStyle(.plain)
-        .frame(minWidth: 64)
+        .frame(minWidth: 48)
         .accessibilityIdentifier(target.identifier)
         .accessibilityLabel(info?.name.isEmpty == false ? info!.name : target.shortTitle)
         .accessibilityValue(isOn ? "on" : "off")

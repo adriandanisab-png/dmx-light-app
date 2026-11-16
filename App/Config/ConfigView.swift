@@ -22,7 +22,7 @@ struct ConfigView: View {
             IssueBanner(patch: patch.wrappedValue)
                 .padding(.horizontal, Space.md).padding(.top, Space.sm)
             HSplitView {
-                typesColumn.frame(minWidth: 300, idealWidth: 340, maxWidth: 440)
+                typesColumn.frame(minWidth: 280, idealWidth: 320, maxWidth: 400)
                 VStack(spacing: 0) {
                     SectionHeader("Patch", systemImage: "list.number") {
                         Button { showAddSheet = true } label: { Label("Add fixtures\u{2026}", systemImage: "plus") }
@@ -59,7 +59,7 @@ struct ConfigView: View {
                     }
                     .frame(minHeight: 200, idealHeight: 240)
                 }
-                .frame(minWidth: 560)
+                .frame(minWidth: 500)
             }
         }
         .sheet(isPresented: $showAddSheet) {
@@ -69,7 +69,7 @@ struct ConfigView: View {
 
     private var typesColumn: some View {
         VStack(spacing: 0) {
-            SectionHeader("Fixture types", systemImage: "lightspectrum.horizontal") {
+            SectionHeader("Types", systemImage: "lightspectrum.horizontal") {
                 Menu {
                     ForEach(BuiltInTemplates.all) { template in
                         Button(template.name) { addType(from: template) }
@@ -77,7 +77,7 @@ struct ConfigView: View {
                     Divider()
                     Button("Empty type") { addType(from: FixtureType(name: "New type", channels: [])) }
                 } label: {
-                    Label("New from template\u{2026}", systemImage: "plus")
+                    Label("New\u{2026}", systemImage: "plus")
                 }
                 .fixedSize()
                 .accessibilityIdentifier("newFromTemplate")

@@ -17,7 +17,7 @@ struct BlackoutButton: View {
             }
         } label: {
             Label("Blackout", systemImage: isOn ? "moon.fill" : "moon")
-                .font(.title2.bold()).frame(minWidth: 170, minHeight: 36)
+                .font(.title2.bold()).frame(minWidth: 120, minHeight: 36)
         }
         .buttonStyle(.borderedProminent)
         .controlSize(.extraLarge)
