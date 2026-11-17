@@ -104,7 +104,7 @@ struct ConsoleFader: View {
         .frame(width: 60)
     }
 
-    /// The visuals are drawn here; a real (vertical, near-invisible) `NSSlider` on top takes the drag and is
+    /// The visuals are drawn here; a real (vertical, draws nothing) `NSSlider` on top takes the drag and is
     /// the accessibility element, so VoiceOver and XCUITest can adjust it (a drawn drag gesture is not reachable).
     private var track: some View {
         let knob: CGFloat = 16
@@ -122,13 +122,17 @@ struct ConsoleFader: View {
                 .offset(y: -travel * level)
             VerticalSlider(value: $level, label: name, identifier: identifier, valueText: "\(percent) %")
                 .frame(width: 56, height: Self.trackHeight)
-                .opacity(0.02)
         }
         .frame(width: 56, height: Self.trackHeight)
     }
 }
 
 /// A vertical `NSSlider` (0...1). It reports a vertical orientation, so VoiceOver and XCUITest can adjust it.
+/// Slider that takes input and accessibility but draws nothing; the fader strip draws itself underneath.
+final class InvisibleSlider: NSSlider {
+    override func draw(_ dirtyRect: NSRect) {}
+}
+
 struct VerticalSlider: NSViewRepresentable {
     @Binding var value: Double
     let label: String
@@ -138,7 +142,7 @@ struct VerticalSlider: NSViewRepresentable {
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
     func makeNSView(context: Context) -> NSSlider {
-        let slider = NSSlider(value: value, minValue: 0, maxValue: 1, target: context.coordinator,
+        let slider = InvisibleSlider(value: value, minValue: 0, maxValue: 1, target: context.coordinator,
                               action: #selector(Coordinator.changed(_:)))
         slider.isVertical = true
         slider.isContinuous = true
