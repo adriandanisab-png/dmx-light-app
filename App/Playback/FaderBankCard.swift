@@ -46,9 +46,24 @@ struct FaderBankCard: View {
                              level: Binding(get: { model.snapshotLevel(s.id) }, set: { model.setSnapshotLevel(s.id, $0) }))
             }
         case .fixtures:
-            row(show.patch.fixtures, empty: "Patch some fixtures to get fixture faders.") { f in
-                ConsoleFader(name: f.name, color: Self.fixtureTint, identifier: "fixtureFader.\(f.name)",
-                             level: Binding(get: { model.fixtureLevels[f.id] ?? 0 }, set: { model.setFixtureLevel(f.id, $0) }))
+            VStack(alignment: .leading, spacing: Space.sm) {
+                if !show.patch.fixtures.isEmpty { PickedLightsColorBar(patch: show.patch, model: model) }
+                HStack(alignment: .top, spacing: Space.sm) {
+                    if !picked.isEmpty {
+                        ConsoleFader(name: "Picked (\(picked.count))", color: .accentColor, identifier: "pickedFader",
+                                     level: Binding(get: { picked.map { model.fixtureLevels[$0] ?? 0 }.max() ?? 0 },
+                                                    set: { model.setFixtureLevel(picked, $0) }),
+                                     picked: true)
+                        Divider().frame(height: ConsoleFader.trackHeight + 60)
+                    }
+                    row(show.patch.fixtures, empty: "Patch some fixtures to get fixture faders.") { f in
+                        ConsoleFader(name: f.name, color: model.fixtureColors[f.id].map(Color.init(rgb:)) ?? Self.fixtureTint,
+                                     identifier: "fixtureFader.\(f.name)",
+                                     level: Binding(get: { model.fixtureLevels[f.id] ?? 0 }, set: { model.setFixtureLevel(f.id, $0) }),
+                                     picked: picked.contains(f.id),
+                                     onNameTap: { togglePick(f.id) })
+                    }
+                }
             }
         case .effects:
             row(show.effects, empty: "Start an effect below and it gets a fader here.") { e in
@@ -56,6 +71,17 @@ struct FaderBankCard: View {
                              level: Binding(get: { model.effectLevel(e.id) }, set: { model.setEffectFader(e.id, $0) }))
             }
         }
+    }
+
+    /// Lights picked on the Playback page (also used by the effect presets and the stage preview).
+    private var picked: [UUID] {
+        let known = Set(show.patch.fixtures.map(\.id))
+        return model.effectTargets.filter { known.contains($0) }
+    }
+
+    private func togglePick(_ id: UUID) {
+        if let i = model.effectTargets.firstIndex(of: id) { model.effectTargets.remove(at: i) }
+        else { model.effectTargets.append(id) }
     }
 
     private func row<Item: Identifiable, Fader: View>(_ items: [Item], empty: String,
@@ -84,6 +110,9 @@ struct ConsoleFader: View {
     let color: Color
     let identifier: String
     @Binding var level: Double
+    var picked = false
+    /// Clicking the name (e.g. to pick the light).
+    var onNameTap: (() -> Void)? = nil
 
     static let trackHeight: CGFloat = 160
 
@@ -98,8 +127,18 @@ struct ConsoleFader: View {
             Text("\(percent) %").font(.caption.monospacedDigit().weight(.semibold))
                 .foregroundStyle(level > 0 ? Color.primary : Color.secondary)
             track
-            Text(name).font(.caption2).lineLimit(2).multilineTextAlignment(.center)
+            Text(name).font(.caption2.weight(picked ? .bold : .regular)).lineLimit(2).multilineTextAlignment(.center)
                 .frame(width: 56, height: 28, alignment: .top)
+                .padding(.horizontal, 2)
+                .background(RoundedRectangle(cornerRadius: 5).fill(picked ? Color.accentColor.opacity(0.35) : .clear))
+                .overlay(RoundedRectangle(cornerRadius: 5).stroke(picked ? Color.accentColor : .clear, lineWidth: 1))
+                .contentShape(Rectangle())
+                .onTapGesture { onNameTap?() }
+                .help(onNameTap == nil ? "" : "Click to pick or unpick this light")
+                .accessibilityAddTraits(onNameTap == nil ? [] : .isButton)
+                .accessibilityIdentifier("faderName.\(name)")
+                .accessibilityValue(picked ? "picked" : "")
+                .accessibilityAction { onNameTap?() }
         }
         .frame(width: 60)
     }
@@ -163,4 +202,68 @@ struct VerticalSlider: NSViewRepresentable {
         init(_ parent: VerticalSlider) { self.parent = parent }
         @objc func changed(_ sender: NSSlider) { parent.value = min(max(sender.doubleValue, 0), 1) }
     }
+}
+
+/// Colour for the picked lights (all lights when none are picked): swatches, a custom colour, and back to
+/// the colour from playbacks. Works with the faders: a dark par comes up in this colour when its fader rises.
+struct PickedLightsColorBar: View {
+    let patch: Patch
+    @ObservedObject var model: AppModel
+    @State private var custom = Color.white
+
+    private var targets: [UUID] {
+        let known = Set(patch.fixtures.map(\.id))
+        let picked = model.effectTargets.filter { known.contains($0) }
+        return picked.isEmpty ? patch.fixtures.map(\.id) : picked
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: Space.xs) {
+                Text("Colour").font(.subheadline.weight(.semibold))
+                Text(model.effectTargets.isEmpty ? "all lights" : "\(targets.count) picked")
+                    .font(.caption).foregroundStyle(.secondary)
+                    .accessibilityIdentifier("colorTarget")
+                Spacer()
+                ColorPicker("Custom", selection: Binding(get: { custom }, set: { custom = $0; apply($0) }),
+                            supportsOpacity: false)
+                    .labelsHidden()
+                    .help("Custom colour")
+                    .accessibilityIdentifier("pickedCustomColor")
+                Button { model.setFixtureColor(nil, for: targets) } label: {
+                    Label("Original", systemImage: "arrow.uturn.backward")
+                }
+                .controlSize(.small)
+                .help("Back to the colour from the playing looks")
+                .disabled(!targets.contains { model.fixtureColors[$0] != nil })
+                .accessibilityIdentifier("pickedColorReset")
+            }
+            HStack(spacing: 6) {
+                ForEach(ColorControl.swatches, id: \.name) { s in
+                    Button { apply(Color(hex: s.hex)) } label: {
+                        Circle().fill(Color(hex: s.hex)).frame(width: 22, height: 22)
+                            .overlay(Circle().stroke(Color.white.opacity(0.35), lineWidth: 1))
+                    }
+                    .buttonStyle(.plain)
+                    .focusable(false)
+                    .help(s.name.capitalized)
+                    .accessibilityLabel(s.name)
+                    .accessibilityIdentifier("pickedSwatch.\(s.name)")
+                }
+            }
+            Text(model.effectTargets.isEmpty ? "Click a light's name below (or on the stage) to pick it. Nothing picked: colour and the Picked fader act on all lights."
+                                             : "Picked lights are highlighted. The Picked fader moves them all together.")
+                .font(.caption).foregroundStyle(.secondary)
+        }
+    }
+
+    private func apply(_ c: Color) {
+        let ns = NSColor(c).usingColorSpace(.sRGB) ?? .white
+        model.setFixtureColor(RGB(r: Double(ns.redComponent), g: Double(ns.greenComponent), b: Double(ns.blueComponent)),
+                              for: targets)
+    }
+}
+
+extension Color {
+    init(rgb: RGB) { self.init(red: rgb.r, green: rgb.g, blue: rgb.b) }
 }

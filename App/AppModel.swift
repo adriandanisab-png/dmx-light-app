@@ -45,6 +45,8 @@ final class AppModel: ObservableObject {
     @Published private(set) var snapshotLevels: [UUID: Double] = [:]
     /// Fixture faders (HTP live layer). Fixtures at 0 are not stored.
     @Published private(set) var fixtureLevels: [UUID: Double] = [:]
+    /// Live colour per fixture, set from the Playback page.
+    @Published private(set) var fixtureColors: [UUID: RGB] = [:]
     @Published var grandMaster: Double = 1 {
         didSet { let v = grandMaster; runner.update { $0.grandMaster = v } }
     }
@@ -136,6 +138,10 @@ final class AppModel: ObservableObject {
             fixtureLevels = fixtureLevels.filter { known.contains($0.key) }
             pushFixtureLevels()
         }
+        if fixtureColors.keys.contains(where: { !known.contains($0) }) {
+            fixtureColors = fixtureColors.filter { known.contains($0.key) }
+            pushFixtureColors()
+        }
         let stillActive = activeSnapshots.filter { s[$0] != nil }
         if stillActive != activeSnapshots {
             activeSnapshots = stillActive
@@ -208,7 +214,7 @@ final class AppModel: ObservableObject {
         var input = runner.currentInput()
         let now = runner.now()
         input.grandMaster = 1; input.blackout = false; input.programmer = Programmer(); input.runningEffects = []
-        input.fixtureLevels = [:]
+        input.fixtureLevels = [:]; input.fixtureColors = [:]
         let from = Engine.render(input, at: now)
         let pb = PlaybackState(snapshotID: snapshotID, startedAt: now,
                                fade: max(fade ?? snap.defaultFade, 0), fadeFrom: from)
@@ -258,6 +264,24 @@ final class AppModel: ObservableObject {
     func clearFixtureFaders() {
         fixtureLevels = [:]
         pushFixtureLevels()
+    }
+
+    /// One fader for several fixtures: sets them all to the same level.
+    func setFixtureLevel(_ ids: [UUID], _ level: Double) {
+        let l = min(max(level, 0), 1)
+        for id in ids { fixtureLevels[id] = l > 0 ? l : nil }
+        pushFixtureLevels()
+    }
+
+    private func pushFixtureColors() {
+        let colors = fixtureColors
+        runner.update { $0.fixtureColors = colors }
+    }
+
+    /// Live colour for these fixtures; nil goes back to the colour from playbacks.
+    func setFixtureColor(_ color: RGB?, for ids: [UUID]) {
+        for id in ids { fixtureColors[id] = color }
+        pushFixtureColors()
     }
 
     func release(_ snapshotID: UUID) {

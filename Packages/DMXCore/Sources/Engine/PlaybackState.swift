@@ -34,14 +34,16 @@ public struct EngineInput: Sendable {
     public var bpm: Double
     /// Fixture faders, 0…1: an HTP layer above the playbacks (see `Engine.applyFixtureLevels`).
     public var fixtureLevels: [UUID: Double]
+    /// Live colour per fixture (Playback page), applied just before the fixture faders.
+    public var fixtureColors: [UUID: RGB]
 
     public init(patch: Patch = Patch(), snapshots: [UUID: Snapshot] = [:], playbacks: [PlaybackState] = [],
                 programmer: Programmer = Programmer(), grandMaster: Double = 1, blackout: Bool = false,
                 effects: [UUID: Effect] = [:], runningEffects: [RunningEffect] = [], bpm: Double = 120,
-                fixtureLevels: [UUID: Double] = [:]) {
+                fixtureLevels: [UUID: Double] = [:], fixtureColors: [UUID: RGB] = [:]) {
         self.patch = patch; self.snapshots = snapshots; self.playbacks = playbacks
         self.programmer = programmer; self.grandMaster = grandMaster; self.blackout = blackout
         self.effects = effects; self.runningEffects = runningEffects; self.bpm = bpm
-        self.fixtureLevels = fixtureLevels
+        self.fixtureLevels = fixtureLevels; self.fixtureColors = fixtureColors
     }
 }

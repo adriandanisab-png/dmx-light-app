@@ -61,7 +61,8 @@ public enum Engine {
             }
         }
 
-        applyFixtureLevels(input.fixtureLevels, to: &frame, types: typeByID, fixtures: fixtureByID)
+        applyFixtureColors(input.fixtureColors, to: &frame, types: typeByID, fixtures: fixtureByID)
+        applyFixtureLevels(input.fixtureLevels, colors: input.fixtureColors, to: &frame, types: typeByID, fixtures: fixtureByID)
         applyEffects(input, at: time, to: &frame, types: typeByID, fixtures: fixtureByID)
 
         for (fixtureID, values) in input.programmer.values {

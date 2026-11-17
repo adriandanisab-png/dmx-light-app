@@ -232,3 +232,37 @@ private func fixtureInput(_ r: Rig, _ levels: [UUID: Double], _ snaps: [Snapshot
     let f = Engine.render(i, at: 1)
     #expect(f[7] == 0 && f[1] == 0)
 }
+
+private func channel(_ r: Rig, _ type: FixtureType, _ fn: ChannelFunction, at fixture: Fixture) -> Int {
+    fixture.address + type.channels.firstIndex { $0.function == fn }!
+}
+
+@Test func fixtureColourOnDimmerFixture() {
+    let r = Rig()
+    var i = r.input()
+    i.fixtureColors = [r.head.id: RGB(r: 0, g: 0, b: 1)]
+    i.fixtureLevels = [r.head.id: 1]
+    let f = Engine.render(i, at: 1)
+    #expect(f[channel(r, r.dim, .intensity, at: r.head)] == 255)
+    #expect(f[channel(r, r.dim, .blue, at: r.head)] == 255)
+    #expect(f[channel(r, r.dim, .red, at: r.head)] == 0)
+}
+
+@Test func fixtureColourKeepsDimmerlessBrightness() {
+    let r = Rig()
+    let s = snap([r.par1.id: [0: 128, 1: 0, 2: 0]])
+    var i = r.input([s], playbacks: [r.playback(s)])
+    i.fixtureColors = [r.par1.id: RGB(r: 0, g: 1, b: 0)]
+    let f = Engine.render(i, at: 1)
+    #expect(f[1] == 0 && f[2] == 128 && f[3] == 0)
+}
+
+@Test func fixtureFaderLightsDarkParInItsColour() {
+    let r = Rig()
+    var i = r.input()
+    i.fixtureColors = [r.par1.id: RGB(r: 1, g: 0, b: 0)]
+    #expect(Engine.render(i, at: 1)[1] == 0)   // colour alone keeps a dark par dark
+    i.fixtureLevels = [r.par1.id: 0.5]
+    let f = Engine.render(i, at: 1)
+    #expect(f[1] == 128 && f[2] == 0 && f[3] == 0)
+}

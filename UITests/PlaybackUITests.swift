@@ -59,6 +59,33 @@ final class PlaybackUITests: DMXUITestCase {
         XCTAssertTrue(waitForLevel(of: first) { $0 > 0.5 }, "fixture fader moved to \(level(of: first))")
     }
 
+    func testPickLightsAndColour() throws {
+        addRGBFixtures(count: 3)
+        openTab("Playback")
+        let fixtures = app.radioButtons["Fixtures"].firstMatch
+        XCTAssertTrue(fixtures.waitForExistence(timeout: 10))
+        fixtures.click()
+
+        // Click two lights' names to pick them: a "Picked" group fader appears.
+        let names = app.descendants(matching: .any)
+            .matching(NSPredicate(format: "identifier BEGINSWITH 'faderName.'"))
+        XCTAssertTrue(names.firstMatch.waitForExistence(timeout: 5))
+        names.element(boundBy: 0).click()
+        names.element(boundBy: 2).click()
+        XCTAssertTrue(waitForValue("picked", of: names.element(boundBy: 0)))
+        let group = element("pickedFader")
+        XCTAssertTrue(group.waitForExistence(timeout: 5))
+        XCTAssertTrue(waitForValue("2 picked", of: element("colorTarget")))
+
+        // Red, then the group fader up: the picked pars light.
+        element("pickedSwatch.red").click()
+        pull(group, to: 0.8)
+        let status = element("outputStatus")
+        let lit = NSPredicate(format: "value != %@", "frameSum=0")
+        XCTAssertEqual(XCTWaiter().wait(for: [XCTNSPredicateExpectation(predicate: lit, object: status)], timeout: 5), .completed)
+        XCTAssertTrue(element("pickedColorReset").isEnabled)
+    }
+
     /// Sets the vertical fader through its slider accessibility action (0 bottom, 1 top): no drag.
     private var diag = ""
 
