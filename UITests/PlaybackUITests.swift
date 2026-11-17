@@ -59,9 +59,9 @@ final class PlaybackUITests: DMXUITestCase {
         XCTAssertTrue(waitForLevel(of: first) { $0 > 0.5 }, "fixture fader moved to \(level(of: first))")
     }
 
-    /// Clicks the vertical fader's track at the given height (0 bottom, 1 top): a plain click, no drag.
+    /// Sets the vertical fader through its slider accessibility action (0 bottom, 1 top): no drag.
     private func pull(_ fader: XCUIElement, to level: Double) {
-        fader.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 1 - level)).click()
+        fader.adjust(toNormalizedSliderPosition: level)
     }
 
     /// A slider's value is a number (0...1) or, for text-valued elements, "NN %".

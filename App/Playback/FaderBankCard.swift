@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 import ShowModel
 
 /// Console-style fader banks: one fader per snapshot, per fixture or per saved effect.
@@ -103,7 +104,7 @@ struct ConsoleFader: View {
         .frame(width: 60)
     }
 
-    /// The visuals are drawn here; a real (rotated, near-invisible) `Slider` on top takes the drag and is
+    /// The visuals are drawn here; a real (vertical, near-invisible) `NSSlider` on top takes the drag and is
     /// the accessibility element, so VoiceOver and XCUITest can adjust it (a drawn drag gesture is not reachable).
     private var track: some View {
         let knob: CGFloat = 16
@@ -119,16 +120,43 @@ struct ConsoleFader: View {
                 .frame(width: 40, height: knob)
                 .shadow(color: .black.opacity(0.5), radius: 2, y: 1)
                 .offset(y: -travel * level)
-            Slider(value: $level, in: 0...1, step: 0.01)
-                .labelsHidden()
-                .frame(width: Self.trackHeight, height: 56)
-                .rotationEffect(.degrees(-90))
+            VerticalSlider(value: $level, label: name, identifier: identifier, valueText: "\(percent) %")
                 .frame(width: 56, height: Self.trackHeight)
                 .opacity(0.02)
-                .accessibilityLabel(name)
-                .accessibilityValue("\(percent) %")
-                .accessibilityIdentifier(identifier)
         }
         .frame(width: 56, height: Self.trackHeight)
+    }
+}
+
+/// A vertical `NSSlider` (0...1). It reports a vertical orientation, so VoiceOver and XCUITest can adjust it.
+struct VerticalSlider: NSViewRepresentable {
+    @Binding var value: Double
+    let label: String
+    let identifier: String
+    let valueText: String
+
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
+
+    func makeNSView(context: Context) -> NSSlider {
+        let slider = NSSlider(value: value, minValue: 0, maxValue: 1, target: context.coordinator,
+                              action: #selector(Coordinator.changed(_:)))
+        slider.isVertical = true
+        slider.isContinuous = true
+        slider.refusesFirstResponder = true   // never take Space / T / B from the page
+        return slider
+    }
+
+    func updateNSView(_ slider: NSSlider, context: Context) {
+        context.coordinator.parent = self
+        if abs(slider.doubleValue - value) > 0.0001 { slider.doubleValue = value }
+        slider.setAccessibilityLabel(label)
+        slider.setAccessibilityIdentifier(identifier)
+        slider.setAccessibilityValueDescription(valueText)
+    }
+
+    @MainActor final class Coordinator: NSObject {
+        var parent: VerticalSlider
+        init(_ parent: VerticalSlider) { self.parent = parent }
+        @objc func changed(_ sender: NSSlider) { parent.value = min(max(sender.doubleValue, 0), 1) }
     }
 }
