@@ -30,6 +30,10 @@ final class ScreenshotUITests: DMXUITestCase {
         let fader = element("snapshotFader.Red wash")
         if fader.waitForExistence(timeout: 5) { fader.adjust(toNormalizedSliderPosition: 0.7) }
 
+        // The effect clicks scrolled the page down; bring the Faders card back to the top for the shot.
+        for sv in app.scrollViews.allElementsBoundByIndex where sv.frame.width > 300 {
+            sv.scroll(byDeltaX: 0, deltaY: 3000)
+        }
         capture("1-Playback", tab: "Playback")
         // Re-select a fixture and set a colour so the Programmer page is populated.
         openTab("Programmer")
