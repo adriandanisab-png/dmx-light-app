@@ -26,11 +26,14 @@ final class ScreenshotUITests: DMXUITestCase {
         chase.click()
         let red = element("playbackButton.Red wash")
         if red.waitForExistence(timeout: 5) { red.click() }
+
+        // The effect clicks scrolled the page down; bring the Faders card back to the top for the shot.
+        for sv in app.scrollViews.allElementsBoundByIndex where sv.frame.width > 300 {
+            sv.scroll(byDeltaX: 0, deltaY: 3000)
+        }
         // Pull the snapshot fader up so the Faders card shows a lit strip.
         let fader = element("snapshotFader.Red wash")
         if fader.waitForExistence(timeout: 5) { fader.adjust(toNormalizedSliderPosition: 0.7) }
-
-        // The effect clicks scrolled the page down; bring the Faders card back to the top for the shot.
         for sv in app.scrollViews.allElementsBoundByIndex where sv.frame.width > 300 {
             sv.scroll(byDeltaX: 0, deltaY: 3000)
         }
