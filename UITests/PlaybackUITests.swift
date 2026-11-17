@@ -42,7 +42,7 @@ final class PlaybackUITests: DMXUITestCase {
         XCTAssertTrue(fader.waitForExistence(timeout: 5))
         XCTAssertEqual(level(of: fader), 0, accuracy: 0.001)
         pull(fader, to: 0.6)
-        XCTAssertTrue(waitForLevel(of: fader) { $0 > 0.3 }, "snapshot fader moved to \(level(of: fader))")
+        XCTAssertTrue(waitForLevel(of: fader) { $0 > 0.3 }, "snapshot fader moved to \(level(of: fader)) \(diag)")
         let status = element("outputStatus")
         let lit = NSPredicate(format: "value != %@", "frameSum=0")
         XCTAssertEqual(XCTWaiter().wait(for: [XCTNSPredicateExpectation(predicate: lit, object: status)], timeout: 5), .completed)
@@ -60,13 +60,15 @@ final class PlaybackUITests: DMXUITestCase {
     }
 
     /// Sets the vertical fader through its slider accessibility action (0 bottom, 1 top): no drag.
+    private var diag = ""
+
     private func pull(_ fader: XCUIElement, to level: Double) {
         fader.adjust(toNormalizedSliderPosition: level)
         if !waitForLevel(of: fader, timeout: 2, { $0 > 0.05 }) {
             // Diagnostics for CI, then a plain click on the track as a second route.
             let note = "adjust did not move \(fader.identifier): frame=\(fader.frame) value=\(String(describing: fader.value)) type=\(fader.elementType.rawValue)"
             XCTContext.runActivity(named: note) { _ in }
-            print("FADERDIAG", note)
+            diag += note + "; "
             fader.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 1 - level)).click()
         }
     }
