@@ -70,6 +70,8 @@ final class PlaybackUITests: DMXUITestCase {
             XCTContext.runActivity(named: note) { _ in }
             diag += note + "; "
             fader.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 1 - level)).click()
+            _ = waitForLevel(of: fader, timeout: 2, { $0 > 0.05 })
+            diag += "after click value=\(String(describing: fader.value)) button=\(String(describing: element("playbackButton.Red wash").value)) status=\(String(describing: element("outputStatus").value)); "
         }
     }
 
