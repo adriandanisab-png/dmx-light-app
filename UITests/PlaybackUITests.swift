@@ -62,6 +62,13 @@ final class PlaybackUITests: DMXUITestCase {
     /// Sets the vertical fader through its slider accessibility action (0 bottom, 1 top): no drag.
     private func pull(_ fader: XCUIElement, to level: Double) {
         fader.adjust(toNormalizedSliderPosition: level)
+        if !waitForLevel(of: fader, timeout: 2, { $0 > 0.05 }) {
+            // Diagnostics for CI, then a plain click on the track as a second route.
+            let note = "adjust did not move \(fader.identifier): frame=\(fader.frame) value=\(String(describing: fader.value)) type=\(fader.elementType.rawValue)"
+            XCTContext.runActivity(named: note) { _ in }
+            print("FADERDIAG", note)
+            fader.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 1 - level)).click()
+        }
     }
 
     /// A slider's value is a number (0...1) or, for text-valued elements, "NN %".
